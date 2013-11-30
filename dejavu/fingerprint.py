@@ -197,13 +197,14 @@ class Fingerprinter():
                 largest_count = diff_counter[diff][sid]
                 song_id = sid
 
-        if verbose: print "Diff is %d with %d offset-aligned matches" % (largest, largest_count)
+        if verbose: 
+            print "Diff is %d with %d offset-aligned matches" % (largest, largest_count)
         
-        #from collections import OrderedDict
-        #print OrderedDict(diff_counter)
-        
-        # extract idenfication        
-        songname = self.db.get_song_by_id(song_id)[SQLDatabase.FIELD_SONGNAME]
+        # extract idenfication      
+        song = self.db.get_song_by_id(song_id)
+        songname = song.get(SQLDatabase.FIELD_SONGNAME, None)
+        if not songname:
+            return None
         songname = songname.replace("_", " ")
         elapsed = time.time() - starttime
         

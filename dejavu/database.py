@@ -102,7 +102,11 @@ class SQLDatabase():
 
     # delete
     DELETE_UNFINGERPRINTED = "DELETE FROM %s WHERE %s = 0;" % (SONGS_TABLENAME, FIELD_FINGERPRINTED)
-    DELETE_ORPHANS = ""
+    DELETE_ORPHANS = """
+    delete from fingerprints 
+    where not exists (
+        select * from songs where fingerprints.song_id  = songs.song_id
+    )"""
     
     def __init__(self, hostname, username, password, database):
         # connect
@@ -154,13 +158,14 @@ class SQLDatabase():
     def delete_orphans(self):
         try:
             self.cursor = self.connection.cursor()
-            self.cursor.execute(SQLDatabase.DELETE_ORPHANS)
-            self.connection.commit()
+            ### TODO: SQLDatabase.DELETE_ORPHANS is not performant enough, need better query
+            ###     to delete fingerprints for which no song is tied to.
+            #self.cursor.execute(SQLDatabase.DELETE_ORPHANS)
+            #self.connection.commit()
         except mysql.Error, e:
             print "Error in delete_orphans(), %d: %s" % (e.args[0], e.args[1])
             self.connection.rollback()
     
-
     def delete_unfingerprinted_songs(self):
         try:
             self.cursor = self.connection.cursor()

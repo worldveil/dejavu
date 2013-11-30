@@ -1,5 +1,5 @@
 from dejavu.database import SQLDatabase
-from dejavu.converter import Converter
+from dejavu.convert import Converter
 from dejavu.fingerprint import Fingerprinter
 from scipy.io import wavfile
 from multiprocessing import Process
@@ -62,8 +62,9 @@ class Dejavu():
             p.join()
             
         # delete orphans
-        print "Done fingerprinting. Deleting orphaned fingerprints..."
-        self.fingerprinter.db.delete_orphans()
+        # print "Done fingerprinting. Deleting orphaned fingerprints..."
+        # TODO: need a more performant query in database.py for the 
+        #self.fingerprinter.db.delete_orphans()
 
     def fingerprint_worker(self, files, sql_connection, output):
 
