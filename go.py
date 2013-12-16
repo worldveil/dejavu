@@ -1,4 +1,4 @@
-from dejavu.control import Dejavu
+from dejavu import Dejavu
 from ConfigParser import ConfigParser
 import warnings
 warnings.filterwarnings("ignore")

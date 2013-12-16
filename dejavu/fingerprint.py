@@ -133,12 +133,7 @@ class Fingerprinter():
             amp_min=DEFAULT_AMP_MIN):
 
         self.config = config
-        database = SQLDatabase(
-            self.config.get(SQLDatabase.CONNECTION, SQLDatabase.KEY_HOSTNAME),
-            self.config.get(SQLDatabase.CONNECTION, SQLDatabase.KEY_USERNAME),
-            self.config.get(SQLDatabase.CONNECTION, SQLDatabase.KEY_PASSWORD),
-            self.config.get(SQLDatabase.CONNECTION, SQLDatabase.KEY_DATABASE))
-        self.db = database
+        
 
         self.Fs = Fs
         self.dt = 1.0 / self.Fs
@@ -183,55 +178,4 @@ class Fingerprinter():
         self.song_names = wpaths
     
     # TODO: put this in another module
-    def align_matches(self, matches, starttime, record_seconds=0, verbose=False):
-        """
-            Finds hash matches that align in time with other matches and finds
-            consensus about which hashes are "true" signal from the audio.
-            
-            Returns a dictionary with match information.
-        """
-        # align by diffs
-        diff_counter = {}
-        largest = 0
-        largest_count = 0
-        song_id = -1
-        for tup in matches:
-            sid, diff = tup
-            if not diff in diff_counter:
-                diff_counter[diff] = {}
-            if not sid in diff_counter[diff]:
-                diff_counter[diff][sid] = 0
-            diff_counter[diff][sid] += 1
 
-            if diff_counter[diff][sid] > largest_count:
-                largest = diff
-                largest_count = diff_counter[diff][sid]
-                song_id = sid
-
-        if verbose: 
-            print "Diff is %d with %d offset-aligned matches" % (largest, largest_count)
-        
-        # extract idenfication      
-        song = self.db.get_song_by_id(song_id)
-        if song:
-            songname = song.get(SQLDatabase.FIELD_SONGNAME, None)
-        else:
-            return None
-        songname = songname.replace("_", " ")
-        elapsed = time.time() - starttime
-        
-        if verbose: 
-            print "Song is %s (song ID = %d) identification took %f seconds" % (songname, song_id, elapsed)
-        
-        # return match info
-        song = {
-            "song_id" : song_id,
-            "song_name" : songname,
-            "match_time" : elapsed,
-            "confidence" : largest_count
-        }
-        
-        if record_seconds: 
-            song['record_time'] = record_seconds
-            
-        return song
