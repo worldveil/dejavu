@@ -233,7 +233,7 @@ class SQLDatabase():
             return self.cursor.fetchone()
         except mysql.Error, e:
             print "Error in get_songs(), %d: %s" % (e.args[0], e.args[1])
-            return None
+            return None 
     
 
     def insert(self, key, value):

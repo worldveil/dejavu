@@ -202,8 +202,9 @@ class Fingerprinter():
         
         # extract idenfication      
         song = self.db.get_song_by_id(song_id)
-        songname = song.get(SQLDatabase.FIELD_SONGNAME, None)
-        if not songname:
+        if song:
+            songname = song.get(SQLDatabase.FIELD_SONGNAME, None)
+        else:
             return None
         songname = songname.replace("_", " ")
         elapsed = time.time() - starttime
