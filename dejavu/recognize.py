@@ -108,7 +108,7 @@ class MicrophoneRecognizer(BaseRecognizer):
     def recognize_recording(self):
         if not self.recorded:
             raise NoRecordingError("Recording was not complete/begun")
-        return self._recognize(*data)
+        return self._recognize(*self.data)
     
     def get_recorded_time(self):
         return len(self.data[0]) / self.rate
