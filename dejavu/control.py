@@ -13,7 +13,7 @@ class Dejavu():
         self.config = config
 
         # create components
-        self.converter = Converter()
+        self.converter = Converter(config)
         self.fingerprinter = Fingerprinter(self.config)
         self.fingerprinter.db.setup()
 

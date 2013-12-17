@@ -9,8 +9,12 @@ class Converter():
         WAV,
         MP3]
 
-    def __init__(self):
-        pass
+    def __init__(self, config):
+        self.config = config
+        if self.config.has_section("input") and self.config.has_option("input", "lenght"):
+            self.max_input_len = int(self.config.get("input", "lenght"))
+        else:        
+            self.max_input_len = None
 
     def ensure_folder(self, extension):
         if not os.path.exists(extension):
@@ -35,7 +39,6 @@ class Converter():
         # start conversion
         self.ensure_folder(output_folder)
         print "-> Now converting: %s from %s format to %s format..." % (song_name, from_format, to_format)
-
         # MP3 --> WAV
         if from_format == Converter.MP3 and to_format == Converter.WAV:
 
@@ -44,6 +47,9 @@ class Converter():
                 print "-> Already converted, skipping..."
             else:
                 mp3file = AudioSegment.from_mp3(orig_path)
+                if self.max_input_len:
+                    print "Reading input seconds: ", self.max_input_len
+                    mp3file = mp3file[:self.max_input_len * 1000]
                 mp3file.export(newpath, format=Converter.WAV)
 
         # unsupported
