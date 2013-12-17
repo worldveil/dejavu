@@ -10,6 +10,10 @@ import sys
 import time
 import array
 
+CHUNK = 8192 # 44100 is a multiple of 1225
+FORMAT = pyaudio.paInt16
+CHANNELS = 2
+RATE = 44100
 
 class BaseRecognizer(object):
     
@@ -17,19 +21,25 @@ class BaseRecognizer(object):
         self.dejavu = dejavu
         self.Fs = dejavu.fingerprint.DEFAULT_FS
     
-    def recognize(self, *data):
+    def _recognize(self, *data):
         matches = []
         for d in data:
             matches.extend(self.dejavu.find_matches(data, Fs=self.Fs))
         return self.dejavu.align_matches(matches)
+    
+    def recognize(self):
+        pass # base class does nothing
+    
+    
 
 
 class WaveFileRecognizer(BaseRecognizer):
     
-    def __init__(self, dejavu):
+    def __init__(self, dejavu, filename=None):
         super(BaseRecognizer, self).__init__(dejavu)
+        self.filename = filename
     
-    def recognize_file(self, filepath):
+    def recognize_file(self, filename):
         Fs, frames = wavfile.read(filename)
         self.Fs = Fs
         
@@ -41,62 +51,75 @@ class WaveFileRecognizer(BaseRecognizer):
             channels.append(frames[:, channel])
         
         t = time.time()
-        match = self.recognize(*channels)
+        match = self._recognize(*channels)
         t = time.time() - t
         
         if match:
             match['match_time'] = t
         
         return match
+    
+    def recognize(self):
+        return self.recognize_file(self.filename)
 
 
 class MicrophoneRecognizer(BaseRecognizer):
-    pass
     
-    
-
-
-class Recognizer(object):
-
-    CHUNK = 8192 # 44100 is a multiple of 1225
-    FORMAT = pyaudio.paInt16
-    CHANNELS = 2
-    RATE = 44100
-
-    def __init__(self, fingerprinter, config):
-
-        self.fingerprinter = fingerprinter
-        self.config = config
+    def __init__(self, dejavu, seconds=None)
+        super(BaseRecognizer, self).__init__(dejavu)
         self.audio = pyaudio.PyAudio()
+        self.stream = None
+        self.data = []
+        self.channels = CHANNELS
+        self.chunk_size = CHUNK
+        self.rate = RATE
+        self.recorded = False
     
-    def listen(self, seconds=10, verbose=False):
+    def start_recording(self, channels=CHANNELS, rate=RATE, chunk=CHUNK):
+        self.chunk_size = chunk
+        self.channels = channels
+        self.recorded = False
+        self.rate = rate
+        
+        if self.stream:
+            self.stream.stop_stream()
+            self.stream.close()
+        
+        self.stream = self.audio.open(format=FORMAT,
+                                channels=channels,
+                                rate=rate,
+                                input=True,
+                                frames_per_buffer=chunk)
+        
+        self.data = [[] for i in range(channels)]
+    
+    def process_recording(self):
+        data = self.stream.read(self.chunk_size)
+        nums = np.fromstring(data, np.int16)
+        for c in range(self.channels):
+            self.data[c].extend(nums[c::c+1])
+    
+    def stop_recording(self):
+        self.stream.stop_stream()
+        self.stream.close()
+        self.stream = None
+        self.recorded = True
+        
+    def recognize_recording(self):
+        if not self.recorded:
+            raise NoRecordingError("Recording was not complete/begun")
+        return self._recognize(*data)
+    
+    def get_recorded_time(self):
+        return len(self.data[0]) / self.rate
+    
+    def recognize(self):
+        self.start_recording()
+        for i in range(0, int(self.rate / self.chunk * self.seconds)):
+            self.process_recording()
+        self.stop_recording()
+        return self.recognize_recording()
+    
+class NoRecordingError(Exception):
+    pass
 
-        # open stream
-        stream = self.audio.open(format=Recognizer.FORMAT,
-                        channels=Recognizer.CHANNELS,
-                        rate=Recognizer.RATE,
-                        input=True,
-                        frames_per_buffer=Recognizer.CHUNK)
-        
-        # record
-        if verbose: print("* recording")
-        left, right = [], []
-        for i in range(0, int(Recognizer.RATE / Recognizer.CHUNK * seconds)):
-            data = stream.read(Recognizer.CHUNK)
-            nums = np.fromstring(data, np.int16)
-            left.extend(nums[1::2])
-            right.extend(nums[0::2])
-        if verbose: print("* done recording")
-        
-        # close and stop the stream
-        stream.stop_stream()
-        stream.close()
-        
-        # match both channels
-        starttime = time.time()
-        matches = []
-        matches.extend(self.fingerprinter.match(left))
-        matches.extend(self.fingerprinter.match(right))
-        
-        # align and return
-        return self.fingerprinter.align_matches(matches, starttime, record_seconds=seconds, verbose=verbose)
