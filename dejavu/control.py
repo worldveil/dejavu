@@ -69,24 +69,22 @@ class Dejavu():
     def fingerprint_worker(self, files, sql_connection, output, keep_wav):
 
         for filename, extension in files:
-
             # if there are already fingerprints in database, don't re-fingerprint or convert
-            song_name = os.path.basename(filename).split(".")[0]
-            if song_name in self.songnames_set: 
+            if filename in self.songnames_set: 
                 print "-> Already fingerprinted, continuing..."
                 continue
 
             # convert to WAV
-            wavout_path = self.converter.convert(filename, extension, Converter.WAV, output, song_name)
+            wavout_path = self.converter.convert(filename, extension, Converter.WAV, output)
 
             # insert song name into database
-            song_id = sql_connection.insert_song(song_name)
+            song_id = sql_connection.insert_song(filename)
 
             # for each channel perform FFT analysis and fingerprinting
             channels = self.extract_channels(wavout_path)
             for c in range(len(channels)):
                 channel = channels[c]
-                print "-> Fingerprinting channel %d of song %s..." % (c+1, song_name)
+                print "-> Fingerprinting channel %d of song %s..." % (c+1, filename)
                 self.fingerprinter.fingerprint(channel, wavout_path, song_id, c+1)
 
             # remove wav file if not required

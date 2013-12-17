@@ -30,8 +30,8 @@ class Converter():
                     filepaths.append((renamed, extension))
         return filepaths
 
-    def convert(self, orig_path, from_format, to_format, output_folder, song_name):
-
+    def convert(self, orig_path, from_format, to_format, output_folder):
+        path, song_name = os.path.split(orig_path)
         # start conversion
         self.ensure_folder(output_folder)
         print "-> Now converting: %s from %s format to %s format..." % (song_name, from_format, to_format)
