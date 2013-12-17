@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 from binascii import unhexlify
 
+from MySQLdb.cursors import Cursor
+
 class Database(object):
     def __init__(self):
         super(Database, self).__init__()
@@ -274,14 +276,13 @@ class SQLDatabase(Database):
 
     def return_matches(self, hashes):
         """
-            Return the (song_id, offset_diff) tuples associated with
-            a list of
+        Return the (song_id, offset_diff) tuples associated with
+        a list of
 
-                sha1 => (None, sample_offset)
+            sha1 => (None, sample_offset)
 
-            values.
+        values.
         """
-        from pymysql.cursors import Cursor
         # Create a dictionary of hash => offset pairs for later lookups
         mapper = {}
         for hash, (_, offset) in hashes:
