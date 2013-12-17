@@ -2,8 +2,8 @@ from __future__ import unicode_literals
 from __future__ import absolute_import
 import Queue
 
-import pymysql
-import pymysql.cursors
+import MySQLdb as mysql
+import MySQLdb.cursors
 
 
 def cursor_factory(**factory_options):
@@ -26,18 +26,18 @@ class Cursor(object):
     """
     _cache = Queue.Queue(maxsize=5)
 
-    def __init__(self, cursor_type=pymysql.cursors.DictCursor, **options):
+    def __init__(self, cursor_type=mysql.cursors.DictCursor, **options):
         super(Cursor, self).__init__()
 
         try:
             conn = self._cache.get_nowait()
         except Queue.Empty:
-            conn = pymysql.connect(**options)
+            conn = mysql.connect(**options)
 
         self.conn = conn
         self.cursor_type = cursor_type
 
-    def __enter__(self):
+    def __enter__(slf):
         self.cursor = self.conn.cursor(self.cursor_type)
         return self.cursor
 
