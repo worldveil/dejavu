@@ -10,10 +10,6 @@ import sys
 import time
 import array
 
-CHUNK = 8192 # 44100 is a multiple of 1225
-FORMAT = pyaudio.paInt16
-CHANNELS = 2
-RATE = 44100
 
 class BaseRecognizer(object):
     
@@ -64,6 +60,11 @@ class WaveFileRecognizer(BaseRecognizer):
 
 
 class MicrophoneRecognizer(BaseRecognizer):
+    
+    CHUNK = 8192 # 44100 is a multiple of 1225
+    FORMAT = pyaudio.paInt16
+    CHANNELS = 2
+    RATE = 44100
     
     def __init__(self, dejavu, seconds=None)
         super(BaseRecognizer, self).__init__(dejavu)
