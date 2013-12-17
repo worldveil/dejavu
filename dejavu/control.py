@@ -34,7 +34,7 @@ class Dejavu():
         """
         return [lst[i::n] for i in xrange(n)]
 
-    def fingerprint(self, path, output, extensions, nprocesses):
+    def fingerprint(self, path, output, extensions, nprocesses, keep_wav=False):
 
         # convert files, shuffle order
         files = self.converter.find_files(path, extensions)
@@ -53,7 +53,7 @@ class Dejavu():
                 self.config.get(SQLDatabase.CONNECTION, SQLDatabase.KEY_DATABASE))
 
             # create process and start it
-            p = Process(target=self.fingerprint_worker, args=(files_split[i], sql_connection, output))
+            p = Process(target=self.fingerprint_worker, args=(files_split[i], sql_connection, output, keep_wav))
             p.start()
             processes.append(p)
 
@@ -66,7 +66,7 @@ class Dejavu():
         # TODO: need a more performant query in database.py for the 
         #self.fingerprinter.db.delete_orphans()
 
-    def fingerprint_worker(self, files, sql_connection, output):
+    def fingerprint_worker(self, files, sql_connection, output, keep_wav):
 
         for filename, extension in files:
 
@@ -88,6 +88,11 @@ class Dejavu():
                 channel = channels[c]
                 print "-> Fingerprinting channel %d of song %s..." % (c+1, song_name)
                 self.fingerprinter.fingerprint(channel, wavout_path, song_id, c+1)
+
+            # remove wav file if not required
+            if not keep_wav:
+                print "removing ", wavout_path
+                os.unlink(wavout_path)            
 
             # only after done fingerprinting do confirm
             sql_connection.set_song_fingerprinted(song_id)
