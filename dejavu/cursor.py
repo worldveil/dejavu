@@ -33,15 +33,22 @@ class Cursor(object):
             conn = self._cache.get_nowait()
         except Queue.Empty:
             conn = mysql.connect(**options)
+        else:
+            # Ping the connection before using it from the cache.
+            conn.ping(True)
 
         self.conn = conn
         self.cursor_type = cursor_type
 
-    def __enter__(slf):
+    def __enter__(self):
         self.cursor = self.conn.cursor(self.cursor_type)
         return self.cursor
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, extype, exvalue, traceback):
+        # if we had a MySQL related error we try to rollback the cursor.
+        if extype is mysql.MySQLError:
+            self.cursor.rollback()
+
         self.cursor.close()
         self.conn.commit()
 

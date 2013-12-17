@@ -1,7 +1,9 @@
 from __future__ import absolute_import
-from binascii import unhexlify
+from itertools import izip_longest
 
+from dejavu.cursor import cursor_factory
 from MySQLdb.cursors import Cursor
+
 
 class Database(object):
     def __init__(self):
@@ -69,11 +71,13 @@ class SQLDatabase(Database):
              `%s` mediumint unsigned not null,
              `%s` int unsigned not null,
          INDEX(%s),
-         UNIQUE(%s, %s, %s)
-    );""" % (
+         UNIQUE(%s, %s, %s),
+         FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE CASCADE
+    ) ENGINE=INNODB;""" % (
         FINGERPRINTS_TABLENAME, FIELD_HASH,
         FIELD_SONG_ID, FIELD_OFFSET, FIELD_HASH,
         FIELD_SONG_ID, FIELD_OFFSET, FIELD_HASH,
+        FIELD_SONG_ID, SONGS_TABLENAME, FIELD_SONG_ID
     )
 
     CREATE_SONGS_TABLE = """
@@ -83,7 +87,7 @@ class SQLDatabase(Database):
             `%s` tinyint default 0,
         PRIMARY KEY (`%s`),
         UNIQUE KEY `%s` (`%s`)
-    );""" % (
+    ) ENGINE=INNODB;""" % (
         SONGS_TABLENAME, FIELD_SONG_ID, FIELD_SONGNAME, FIELD_FINGERPRINTED,
         FIELD_SONG_ID, FIELD_SONG_ID, FIELD_SONG_ID,
     )
@@ -141,18 +145,17 @@ class SQLDatabase(Database):
         DELETE FROM %s WHERE %s = 0;
     """ % (SONGS_TABLENAME, FIELD_FINGERPRINTED)
 
-    DELETE_ORPHANS = """
-        delete from fingerprints
-        where not exists (
-            select * from songs where fingerprints.song_id  = songs.song_id
-        );
-    """
-
-    def __init__(self, cursor):
+    def __init__(self, **options):
         super(SQLDatabase, self).__init__()
-        self.cursor = cursor
+        self.cursor = cursor_factory(**options)
 
     def setup(self):
+        """
+        Creates any non-existing tables required for dejavu to function.
+
+        This also removes all songs that have been added but have no
+        fingerprints associated with them.
+        """
         with self.cursor() as cur:
             cur.execute(self.CREATE_FINGERPRINTS_TABLE)
             cur.execute(self.CREATE_SONGS_TABLE)
@@ -160,7 +163,11 @@ class SQLDatabase(Database):
 
     def empty(self):
         """
-            Drops all tables and re-adds them. Be carfeul with this!
+        Drops tables created by dejavu and then creates them again
+        by calling `SQLDatabase.setup`.
+
+        .. warning:
+            This will result in a loss of data
         """
         with self.cursor() as cur:
             cur.execute(self.DROP_FINGERPRINTS)
@@ -168,16 +175,11 @@ class SQLDatabase(Database):
 
         self.setup()
 
-    def delete_orphans(self):
-        # TODO: SQLDatabase.DELETE_ORPHANS is not
-        # performant enough, need better query to
-        # delete fingerprints for which no song is tied to.
-
-        # with self.cursor() as cur:
-        #   cur.execute(self.DELETE_ORPHANS)
-        pass
 
     def delete_unfingerprinted_songs(self):
+        """
+        Removes all songs that have no fingerprints associated with them.
+        """
         with self.cursor() as cur:
             cur.execute(self.DELETE_UNFINGERPRINTED)
 
@@ -188,8 +190,9 @@ class SQLDatabase(Database):
         with self.cursor() as cur:
             cur.execute(self.SELECT_UNIQUE_SONG_IDS)
 
-            for row in cur:
-                return row['n']
+            for count, in cur:
+                return count
+            return 0
 
     def get_num_fingerprints(self):
         """
@@ -304,7 +307,6 @@ class SQLDatabase(Database):
                     yield (sid, offset - mapper[hash])
 
 
-from itertools import izip_longest
 def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
     return izip_longest(fillvalue=fillvalue, *args)
