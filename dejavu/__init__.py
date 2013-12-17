@@ -118,11 +118,22 @@ class Dejavu():
             channels.append(frames[:, channel])
         return (channels, Fs)
     
-    def match(self, samples, Fs=fingerprint.DEFAULT_FS):
+    def fingerprint(self, filepath, song_name=None):
+        # TODO: replace with something that handles all audio formats
+        channels, Fs = self.extract_channels(path)
+        if not song_name:
+            song_name = os.path.basename(filename).split(".")[0]
+        song_id = self.db.insert_song(song_name)
+        
+        for data in channels:
+            hashes = fingerprint.fingerprint(data, Fs=Fs)
+            self.db.insert_hashes(song_id, hashes)
+    
+    def find_matches(self, samples, Fs=fingerprint.DEFAULT_FS):
         hashes = fingerprint.fingerprint(samples, Fs=Fs)
         return self.db.return_matches(hashes)
     
-    def align_matches(self, matches, starttime, record_seconds=None):
+    def align_matches(self, matches):
         """
             Finds hash matches that align in time with other matches and finds
             consensus about which hashes are "true" signal from the audio.
@@ -156,8 +167,6 @@ class Dejavu():
             songname = song.get(SQLDatabase.FIELD_SONGNAME, None)
         else:
             return None
-        songname = songname.replace("_", " ")
-        elapsed = time.time() - starttime
         
         if DEBUG: 
             print("Song is %s (song ID = %d) identification took %f seconds" % (songname, song_id, elapsed))
@@ -166,11 +175,7 @@ class Dejavu():
         song = {
             "song_id" : song_id,
             "song_name" : songname,
-            "match_time" : elapsed,
             "confidence" : largest_count
         }
-        
-        if record_seconds: 
-            song['record_time'] = record_seconds
             
         return song
