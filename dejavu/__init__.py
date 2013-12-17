@@ -1,6 +1,6 @@
 from dejavu.database import SQLDatabase
 from dejavu.convert import Converter
-import dejavu.fingerprint as fingerprint
+import fingerprint
 from scipy.io import wavfile
 from multiprocessing import Process
 import wave, os
@@ -44,7 +44,7 @@ class Dejavu():
         """
         return [lst[i::n] for i in xrange(n)]
 
-    def fingerprint(self, path, output, extensions, nprocesses):
+    def do_fingerprint(self, path, output, extensions, nprocesses):
 
         # convert files, shuffle order
         files = self.converter.find_files(path, extensions)
@@ -118,7 +118,7 @@ class Dejavu():
             channels.append(frames[:, channel])
         return (channels, Fs)
     
-    def fingerprint(self, filepath, song_name=None):
+    def fingerprint_file(self, filepath, song_name=None):
         # TODO: replace with something that handles all audio formats
         channels, Fs = self.extract_channels(path)
         if not song_name:

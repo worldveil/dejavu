@@ -32,7 +32,7 @@ class BaseRecognizer(object):
 class WaveFileRecognizer(BaseRecognizer):
     
     def __init__(self, dejavu, filename=None):
-        super(BaseRecognizer, self).__init__(dejavu)
+        super(WaveFileRecognizer, self).__init__(dejavu)
         self.filename = filename
     
     def recognize_file(self, filename):
@@ -66,8 +66,8 @@ class MicrophoneRecognizer(BaseRecognizer):
     CHANNELS = 2
     RATE = 44100
     
-    def __init__(self, dejavu, seconds=None)
-        super(BaseRecognizer, self).__init__(dejavu)
+    def __init__(self, dejavu, seconds=None):
+        super(MicrophoneRecognizer, self).__init__(dejavu)
         self.audio = pyaudio.PyAudio()
         self.stream = None
         self.data = []
