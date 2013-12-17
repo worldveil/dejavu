@@ -260,14 +260,13 @@ class SQLDatabase(Database):
         """
         return self.query(None)
 
-    def insert_hashes(self, hashes):
+    def insert_hashes(self, sid, hashes):
         """
         Insert series of hash => song_id, offset
         values into the database.
         """
-        # TODO: Fix this when hashes will be a new format.
         values = []
-        for hash, (sid, offset) in hashes:
+        for hash, offset in hashes:
             values.append((hash, sid, offset))
 
         with self.cursor() as cur:
