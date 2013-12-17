@@ -277,15 +277,11 @@ class SQLDatabase(Database):
     def return_matches(self, hashes):
         """
         Return the (song_id, offset_diff) tuples associated with
-        a list of
-
-            sha1 => (None, sample_offset)
-
-        values.
+        a list of (sha1, sample_offset) values.
         """
         # Create a dictionary of hash => offset pairs for later lookups
         mapper = {}
-        for hash, (_, offset) in hashes:
+        for hash, offset in hashes:
             mapper[hash.upper()] = offset
 
         # Get an iteratable of all the hashes we need
