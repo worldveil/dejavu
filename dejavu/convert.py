@@ -28,10 +28,8 @@ class Converter():
             for extension in extensions:
                 for f in fnmatch.filter(files, "*.%s" % extension):
                     p = os.path.join(dirpath, f)
-                    renamed = p.replace(" ", "_")
-                    os.rename(p, renamed)
                     #print "Found file: %s with extension %s" % (renamed, extension)
-                    filepaths.append((renamed, extension))
+                    filepaths.append((p, extension))
         return filepaths
 
     def convert(self, orig_path, from_format, to_format, output_folder):
