@@ -70,7 +70,7 @@ class SQLDatabase(Database):
              `%s` binary(10) not null,
              `%s` mediumint unsigned not null,
              `%s` int unsigned not null,
-         INDEX(%s),
+         PRIMARY KEY(%s),
          UNIQUE(%s, %s, %s),
          FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE CASCADE
     ) ENGINE=INNODB;""" % (
@@ -157,8 +157,8 @@ class SQLDatabase(Database):
         fingerprints associated with them.
         """
         with self.cursor() as cur:
-            cur.execute(self.CREATE_FINGERPRINTS_TABLE)
             cur.execute(self.CREATE_SONGS_TABLE)
+            cur.execute(self.CREATE_FINGERPRINTS_TABLE)
             cur.execute(self.DELETE_UNFINGERPRINTED)
 
     def empty(self):

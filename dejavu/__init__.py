@@ -8,20 +8,14 @@ import random
 
 DEBUG = False
 
-class Dejavu():
-
+class Dejavu(object):
     def __init__(self, config):
-    
+
         self.config = config
-        
+
         # initialize db
-        database = SQLDatabase(
-            self.config.get(SQLDatabase.CONNECTION, SQLDatabase.KEY_HOSTNAME),
-            self.config.get(SQLDatabase.CONNECTION, SQLDatabase.KEY_USERNAME),
-            self.config.get(SQLDatabase.CONNECTION, SQLDatabase.KEY_PASSWORD),
-            self.config.get(SQLDatabase.CONNECTION, SQLDatabase.KEY_DATABASE))
-        self.db = database
-        
+        self.db = SQLDatabase(**config.get("database", {}))
+
         # create components
         self.converter = Converter()
         #self.fingerprinter = Fingerprinter(self.config)
@@ -30,16 +24,16 @@ class Dejavu():
         # get songs previously indexed
         self.songs = self.db.get_songs()
         self.songnames_set = set() # to know which ones we've computed before
-        if self.songs:
-            for song in self.songs:
-                song_id = song[SQLDatabase.FIELD_SONG_ID]
-                song_name = song[SQLDatabase.FIELD_SONGNAME]
-                self.songnames_set.add(song_name)
-                print "Added: %s to the set of fingerprinted songs..." % song_name
+
+        for song in self.songs:
+            song_name = song[self.db.FIELD_SONGNAME]
+
+            self.songnames_set.add(song_name)
+            print "Added: %s to the set of fingerprinted songs..." % song_name
 
     def chunkify(self, lst, n):
         """
-            Splits a list into roughly n equal parts. 
+            Splits a list into roughly n equal parts.
             http://stackoverflow.com/questions/2130016/splitting-a-list-of-arbitrary-size-into-only-roughly-n-equal-parts
         """
         return [lst[i::n] for i in xrange(n)]
@@ -55,25 +49,19 @@ class Dejavu():
         processes = []
         for i in range(nprocesses):
 
-            # need database instance since mysql connections shouldn't be shared across processes
-            sql_connection = SQLDatabase( 
-                self.config.get(SQLDatabase.CONNECTION, SQLDatabase.KEY_HOSTNAME),
-                self.config.get(SQLDatabase.CONNECTION, SQLDatabase.KEY_USERNAME),
-                self.config.get(SQLDatabase.CONNECTION, SQLDatabase.KEY_PASSWORD),
-                self.config.get(SQLDatabase.CONNECTION, SQLDatabase.KEY_DATABASE))
-
             # create process and start it
-            p = Process(target=self.fingerprint_worker, args=(files_split[i], sql_connection, output))
+            p = Process(target=self.fingerprint_worker,
+                        args=(files_split[i], self.db, output))
             p.start()
             processes.append(p)
 
         # wait for all processes to complete
         for p in processes:
             p.join()
-            
+
         # delete orphans
         # print "Done fingerprinting. Deleting orphaned fingerprints..."
-        # TODO: need a more performant query in database.py for the 
+        # TODO: need a more performant query in database.py for the
         #self.fingerprinter.db.delete_orphans()
 
     def fingerprint_worker(self, files, sql_connection, output):
@@ -82,7 +70,7 @@ class Dejavu():
 
             # if there are already fingerprints in database, don't re-fingerprint or convert
             song_name = os.path.basename(filename).split(".")[0]
-            if DEBUG and song_name in self.songnames_set: 
+            if DEBUG and song_name in self.songnames_set:
                 print("-> Already fingerprinted, continuing...")
                 continue
 
@@ -117,27 +105,27 @@ class Dejavu():
         for channel in range(nchannels):
             channels.append(frames[:, channel])
         return (channels, Fs)
-    
+
     def fingerprint_file(self, filepath, song_name=None):
         # TODO: replace with something that handles all audio formats
         channels, Fs = self.extract_channels(path)
         if not song_name:
             song_name = os.path.basename(filename).split(".")[0]
         song_id = self.db.insert_song(song_name)
-        
+
         for data in channels:
             hashes = fingerprint.fingerprint(data, Fs=Fs)
             self.db.insert_hashes(song_id, hashes)
-    
+
     def find_matches(self, samples, Fs=fingerprint.DEFAULT_FS):
         hashes = fingerprint.fingerprint(samples, Fs=Fs)
         return self.db.return_matches(hashes)
-    
+
     def align_matches(self, matches):
         """
             Finds hash matches that align in time with other matches and finds
             consensus about which hashes are "true" signal from the audio.
-            
+
             Returns a dictionary with match information.
         """
         # align by diffs
@@ -158,24 +146,24 @@ class Dejavu():
                 largest_count = diff_counter[diff][sid]
                 song_id = sid
 
-        if DEBUG: 
+        if DEBUG:
             print("Diff is %d with %d offset-aligned matches" % (largest, largest_count))
-        
-        # extract idenfication      
+
+        # extract idenfication
         song = self.db.get_song_by_id(song_id)
         if song:
             songname = song.get(SQLDatabase.FIELD_SONGNAME, None)
         else:
             return None
-        
-        if DEBUG: 
+
+        if DEBUG:
             print("Song is %s (song ID = %d) identification took %f seconds" % (songname, song_id, elapsed))
-        
+
         # return match info
         song = {
             "song_id" : song_id,
             "song_name" : songname,
             "confidence" : largest_count
         }
-            
+
         return song
