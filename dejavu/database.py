@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from itertools import izip_longest
 
 from dejavu.cursor import cursor_factory
-from MySQLdb.cursors import Cursor
+from MySQLdb.cursors import DictCursor
 
 
 class Database(object):
@@ -175,7 +175,6 @@ class SQLDatabase(Database):
 
         self.setup()
 
-
     def delete_unfingerprinted_songs(self):
         """
         Removes all songs that have no fingerprints associated with them.
@@ -201,8 +200,9 @@ class SQLDatabase(Database):
         with self.cursor() as cur:
             cur.execute(self.SELECT_NUM_FINGERPRINTS)
 
-            for row in cur:
-                return row['n']
+            for count, in cur:
+                return count
+            return 0
 
     def set_song_fingerprinted(self, sid):
         """
@@ -216,7 +216,7 @@ class SQLDatabase(Database):
         """
         Return songs that have the fingerprinted flag set TRUE (1).
         """
-        with self.cursor() as cur:
+        with self.cursor(cursor_type=DictCursor) as cur:
             cur.execute(self.SELECT_SONGS)
             for row in cur:
                 yield row
@@ -225,7 +225,7 @@ class SQLDatabase(Database):
         """
         Returns song by its ID.
         """
-        with self.cursor() as cur:
+        with self.cursor(cursor_type=DictCursor) as cur:
             cur.execute(self.SELECT_SONG, (sid,))
             return cur.fetchone()
 
@@ -256,8 +256,8 @@ class SQLDatabase(Database):
 
         with self.cursor() as cur:
             cur.execute(query)
-            for row in cur:
-                yield (row[self.FIELD_SONG_ID], row[self.FIELD_OFFSET])
+            for sid, offset in cur:
+                yield (sid, offset)
 
     def get_iterable_kv_pairs(self):
         """
@@ -294,7 +294,7 @@ class SQLDatabase(Database):
         # Get an iteratable of all the hashes we need
         values = mapper.keys()
 
-        with self.cursor(cursor_type=Cursor) as cur:
+        with self.cursor() as cur:
             for split_values in grouper(values, 1000):
                 # Create our IN part of the query
                 query = self.SELECT_MULTIPLE

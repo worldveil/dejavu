@@ -26,7 +26,7 @@ class Cursor(object):
     """
     _cache = Queue.Queue(maxsize=5)
 
-    def __init__(self, cursor_type=mysql.cursors.DictCursor, **options):
+    def __init__(self, cursor_type=mysql.cursors.Cursor, **options):
         super(Cursor, self).__init__()
 
         try:
