@@ -13,7 +13,7 @@ class Dejavu():
         self.config = config
 
         # create components
-        self.converter = Converter()
+        self.converter = Converter(config)
         self.fingerprinter = Fingerprinter(self.config)
         self.fingerprinter.db.setup()
 
@@ -34,7 +34,7 @@ class Dejavu():
         """
         return [lst[i::n] for i in xrange(n)]
 
-    def fingerprint(self, path, output, extensions, nprocesses):
+    def fingerprint(self, path, output, extensions, nprocesses, keep_wav=False):
 
         # convert files, shuffle order
         files = self.converter.find_files(path, extensions)
@@ -53,41 +53,54 @@ class Dejavu():
                 self.config.get(SQLDatabase.CONNECTION, SQLDatabase.KEY_DATABASE))
 
             # create process and start it
-            p = Process(target=self.fingerprint_worker, args=(files_split[i], sql_connection, output))
+            p = Process(target=self.fingerprint_worker, args=(files_split[i], sql_connection, output, keep_wav))
             p.start()
             processes.append(p)
 
         # wait for all processes to complete
-        for p in processes:
-            p.join()
+        try:        
+            for p in processes:
+                p.join()
+        except KeyboardInterrupt:
+            print "-> Exiting.."
+            for worker in processes:
+                worker.terminate()
+                worker.join()
             
         # delete orphans
         # print "Done fingerprinting. Deleting orphaned fingerprints..."
         # TODO: need a more performant query in database.py for the 
         #self.fingerprinter.db.delete_orphans()
 
-    def fingerprint_worker(self, files, sql_connection, output):
+    def fingerprint_worker(self, files, sql_connection, output, keep_wav):
 
         for filename, extension in files:
-
             # if there are already fingerprints in database, don't re-fingerprint or convert
-            song_name = os.path.basename(filename).split(".")[0]
-            if song_name in self.songnames_set: 
+            if filename in self.songnames_set: 
                 print "-> Already fingerprinted, continuing..."
                 continue
 
             # convert to WAV
-            wavout_path = self.converter.convert(filename, extension, Converter.WAV, output, song_name)
-
-            # insert song name into database
-            song_id = sql_connection.insert_song(song_name)
+            wavout_path = self.converter.convert(filename, extension, Converter.WAV, output)
 
             # for each channel perform FFT analysis and fingerprinting
-            channels = self.extract_channels(wavout_path)
+            try:            
+                channels = self.extract_channels(wavout_path)
+            except AssertionError, e:
+                print "-> File not supported, skipping."
+                continue
+
+            # insert song name into database
+            song_id = sql_connection.insert_song(filename)
+
             for c in range(len(channels)):
                 channel = channels[c]
-                print "-> Fingerprinting channel %d of song %s..." % (c+1, song_name)
+                print "-> Fingerprinting channel %d of song %s..." % (c+1, filename)
                 self.fingerprinter.fingerprint(channel, wavout_path, song_id, c+1)
+
+            # remove wav file if not required
+            if not keep_wav:
+                os.unlink(wavout_path)            
 
             # only after done fingerprinting do confirm
             sql_connection.set_song_fingerprinted(song_id)
