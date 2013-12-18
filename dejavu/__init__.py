@@ -1,27 +1,25 @@
 from dejavu.database import SQLDatabase
-import dejavu.decode as decoder
+import dejavu.decoder as decoder
 import fingerprint
-from scipy.io import wavfile
-from multiprocessing import Process
-import wave, os
+from multiprocessing import Process, cpu_count
+import os
 import random
 
-DEBUG = False
 
 class Dejavu(object):
     def __init__(self, config):
+        super(Dejavu, self).__init__()
 
         self.config = config
 
         # initialize db
         self.db = SQLDatabase(**config.get("database", {}))
 
-        #self.fingerprinter = Fingerprinter(self.config)
         self.db.setup()
 
         # get songs previously indexed
         self.songs = self.db.get_songs()
-        self.songnames_set = set() # to know which ones we've computed before
+        self.songnames_set = set()  # to know which ones we've computed before
 
         for song in self.songs:
             song_name = song[self.db.FIELD_SONGNAME]
@@ -29,27 +27,27 @@ class Dejavu(object):
             self.songnames_set.add(song_name)
             print "Added: %s to the set of fingerprinted songs..." % song_name
 
-    def chunkify(self, lst, n):
-        """
-            Splits a list into roughly n equal parts.
-            http://stackoverflow.com/questions/2130016/splitting-a-list-of-arbitrary-size-into-only-roughly-n-equal-parts
-        """
-        return [lst[i::n] for i in xrange(n)]
-
-    def do_fingerprint(self, path, output, extensions, nprocesses):
+    def fingerprint_directory(self, path, extensions, nprocesses=None):
+        # Try to use the maximum amount of processes if not given.
+        if nprocesses is None:
+            try:
+                nprocesses = cpu_count()
+            except NotImplementedError:
+                nprocesses = 1
 
         # convert files, shuffle order
-        files = decoder.find_files(path, extensions)
+        files = list(decoder.find_files(path, extensions))
         random.shuffle(files)
-        files_split = self.chunkify(files, nprocesses)
+
+        files_split = chunkify(files, nprocesses)
 
         # split into processes here
         processes = []
         for i in range(nprocesses):
 
             # create process and start it
-            p = Process(target=self.fingerprint_worker,
-                        args=(files_split[i], self.db, output))
+            p = Process(target=self._fingerprint_worker,
+                        args=(files_split[i], self.db))
             p.start()
             processes.append(p)
 
@@ -57,55 +55,37 @@ class Dejavu(object):
         for p in processes:
             p.join()
 
-        # delete orphans
-        # print "Done fingerprinting. Deleting orphaned fingerprints..."
-        # TODO: need a more performant query in database.py for the
-        #self.fingerprinter.db.delete_orphans()
-
-    def fingerprint_worker(self, files, sql_connection, output):
-
+    def _fingerprint_worker(self, files, db):
         for filename, extension in files:
 
-            # if there are already fingerprints in database, don't re-fingerprint or convert
+            # if there are already fingerprints in database,
+            # don't re-fingerprint
             song_name = os.path.basename(filename).split(".")[0]
-            if DEBUG and song_name in self.songnames_set:
+            if song_name in self.songnames_set:
                 print("-> Already fingerprinted, continuing...")
                 continue
 
             channels, Fs = decoder.read(filename)
 
             # insert song name into database
-            song_id = sql_connection.insert_song(song_name)
+            song_id = db.insert_song(song_name)
 
             for c in range(len(channels)):
                 channel = channels[c]
                 print "-> Fingerprinting channel %d of song %s..." % (c+1, song_name)
+
                 hashes = fingerprint.fingerprint(channel, Fs=Fs)
-                sql_connection.insert_hashes(song_id, hashes)
+
+                db.insert_hashes(song_id, hashes)
 
             # only after done fingerprinting do confirm
-            sql_connection.set_song_fingerprinted(song_id)
-
-    def extract_channels(self, path):
-        """
-            Reads channels from disk.
-            Returns a tuple with (channels, sample_rate)
-        """
-        channels = []
-        Fs, frames = wavfile.read(path)
-        wave_object = wave.open(path)
-        nchannels, sampwidth, framerate, num_frames, comptype, compname = wave_object.getparams()
-        #assert Fs == self.fingerprinter.Fs
-
-        for channel in range(nchannels):
-            channels.append(frames[:, channel])
-        return (channels, Fs)
+            db.set_song_fingerprinted(song_id)
 
     def fingerprint_file(self, filepath, song_name=None):
-        # TODO: replace with something that handles all audio formats
-        channels, Fs = self.extract_channels(path)
+        channels, Fs = decoder.read(filepath)
+
         if not song_name:
-            song_name = os.path.basename(filename).split(".")[0]
+            song_name = os.path.basename(filepath).split(".")[0]
         song_id = self.db.insert_song(song_name)
 
         for data in channels:
@@ -141,8 +121,7 @@ class Dejavu(object):
                 largest_count = diff_counter[diff][sid]
                 song_id = sid
 
-        if DEBUG:
-            print("Diff is %d with %d offset-aligned matches" % (largest, largest_count))
+        print("Diff is %d with %d offset-aligned matches" % (largest, largest_count))
 
         # extract idenfication
         song = self.db.get_song_by_id(song_id)
@@ -151,14 +130,23 @@ class Dejavu(object):
         else:
             return None
 
-        if DEBUG:
-            print("Song is %s (song ID = %d) identification took %f seconds" % (songname, song_id, elapsed))
-
         # return match info
         song = {
-            "song_id" : song_id,
-            "song_name" : songname,
-            "confidence" : largest_count
+            "song_id": song_id,
+            "song_name": songname,
+            "confidence": largest_count
         }
 
         return song
+
+    def recognize(self, recognizer, *options, **kwoptions):
+        r = recognizer(self)
+        return r.recognize(*options, **kwoptions)
+
+
+def chunkify(lst, n):
+    """
+    Splits a list into roughly n equal parts.
+    http://stackoverflow.com/questions/2130016/splitting-a-list-of-arbitrary-size-into-only-roughly-n-equal-parts
+    """
+    return [lst[i::n] for i in xrange(n)]

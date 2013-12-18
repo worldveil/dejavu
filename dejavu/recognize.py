@@ -1,14 +1,8 @@
-from multiprocessing import Queue, Process
-from dejavu.database import SQLDatabase
 import dejavu.fingerprint as fingerprint
-from dejavu import Dejavu
-from scipy.io import wavfile
-import wave
+import dejavu.decoder as decoder
 import numpy as np
 import pyaudio
-import sys
 import time
-import array
 
 
 class BaseRecognizer(object):
@@ -26,25 +20,17 @@ class BaseRecognizer(object):
     def recognize(self):
         pass  # base class does nothing
 
-class WaveFileRecognizer(BaseRecognizer):
 
-    def __init__(self, dejavu, filename=None):
-        super(WaveFileRecognizer, self).__init__(dejavu)
-        self.filename = filename
+class FileRecognizer(BaseRecognizer):
+    def __init__(self, dejavu):
+        super(FileRecognizer, self).__init__(dejavu)
 
     def recognize_file(self, filename):
-        Fs, frames = wavfile.read(filename)
+        Fs, frames = decoder.read(filename)
         self.Fs = Fs
 
-        wave_object = wave.open(filename)
-        nchannels, sampwidth, framerate, num_frames, comptype, compname = wave_object.getparams()
-
-        channels = []
-        for channel in range(nchannels):
-            channels.append(frames[:, channel])
-
         t = time.time()
-        match = self._recognize(*channels)
+        match = self._recognize(*frames)
         t = time.time() - t
 
         if match:
@@ -52,50 +38,53 @@ class WaveFileRecognizer(BaseRecognizer):
 
         return match
 
-    def recognize(self):
-        return self.recognize_file(self.filename)
+    def recognize(self, filename):
+        return self.recognize_file(filename)
 
 
 class MicrophoneRecognizer(BaseRecognizer):
+    default_chunksize   = 8192
+    default_format      = pyaudio.paInt16
+    default_channels    = 2
+    default_samplerate  = 44100
 
-    CHUNK = 8192 # 44100 is a multiple of 1225
-    FORMAT = pyaudio.paInt16
-    CHANNELS = 2
-    RATE = 44100
-
-    def __init__(self, dejavu, seconds=None):
+    def __init__(self, dejavu):
         super(MicrophoneRecognizer, self).__init__(dejavu)
         self.audio = pyaudio.PyAudio()
         self.stream = None
         self.data = []
-        self.channels = CHANNELS
-        self.chunk_size = CHUNK
-        self.rate = RATE
+        self.channels = self.default_channels
+        self.chunksize = self.default_chunk
+        self.samplerate = self.default_samplerate
         self.recorded = False
 
-    def start_recording(self, channels=CHANNELS, rate=RATE, chunk=CHUNK):
-        self.chunk_size = chunk
+    def start_recording(self, channels=default_channels,
+                        samplerate=default_samplerate,
+                        chunksize=default_chunksize):
+        self.chunksize = chunksize
         self.channels = channels
         self.recorded = False
-        self.rate = rate
+        self.samplerate = samplerate
 
         if self.stream:
             self.stream.stop_stream()
             self.stream.close()
 
-        self.stream = self.audio.open(format=FORMAT,
-                                channels=channels,
-                                rate=rate,
-                                input=True,
-                                frames_per_buffer=chunk)
+        self.stream = self.audio.open(
+            format=self.default_format,
+            channels=channels,
+            rate=samplerate,
+            input=True,
+            frames_per_buffer=chunksize,
+        )
 
         self.data = [[] for i in range(channels)]
 
     def process_recording(self):
-        data = self.stream.read(self.chunk_size)
+        data = self.stream.read(self.chunksize)
         nums = np.fromstring(data, np.int16)
         for c in range(self.channels):
-            self.data[c].extend(nums[c::c+1])
+            self.data[c].extend(nums[c::len(self.channels)])
 
     def stop_recording(self):
         self.stream.stop_stream()
@@ -111,13 +100,14 @@ class MicrophoneRecognizer(BaseRecognizer):
     def get_recorded_time(self):
         return len(self.data[0]) / self.rate
 
-    def recognize(self):
+    def recognize(self, seconds=None):
         self.start_recording()
-        for i in range(0, int(self.rate / self.chunk * self.seconds)):
+        for i in range(0, int(self.samplerate / self.chunksize
+                              * seconds)):
             self.process_recording()
         self.stop_recording()
         return self.recognize_recording()
 
+
 class NoRecordingError(Exception):
     pass
-
