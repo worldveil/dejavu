@@ -11,8 +11,8 @@ class Converter():
 
     def __init__(self, config):
         self.config = config
-        if self.config.has_section("input") and self.config.has_option("input", "lenght"):
-            self.max_input_len = int(self.config.get("input", "lenght"))
+        if self.config.has_section("input") and self.config.has_option("input", "length"):
+            self.max_input_len = self.config.getint("input", "length")
         else:        
             self.max_input_len = None
 
