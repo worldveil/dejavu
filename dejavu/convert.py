@@ -24,7 +24,7 @@ class Converter():
         filepaths = []
         extensions = [e.replace(".", "") for e in extensions if e.replace(".", "") in Converter.FORMATS]
         print "Supported formats: %s" % extensions
-        for dirpath, dirnames, files in os.walk(path) :
+        for dirpath, dirnames, files in os.walk(path):
             for extension in extensions:
                 for f in fnmatch.filter(files, "*.%s" % extension):
                     p = os.path.join(dirpath, f)
@@ -46,7 +46,7 @@ class Converter():
             else:
                 mp3file = AudioSegment.from_mp3(orig_path)
                 if self.max_input_len:
-                    print "Reading input seconds: ", self.max_input_len
+                    print "-> Reading input seconds: ", self.max_input_len
                     mp3file = mp3file[:self.max_input_len * 1000]
                 mp3file.export(newpath, format=Converter.WAV)
 

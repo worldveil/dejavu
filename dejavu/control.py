@@ -58,8 +58,14 @@ class Dejavu():
             processes.append(p)
 
         # wait for all processes to complete
-        for p in processes:
-            p.join()
+        try:        
+            for p in processes:
+                p.join()
+        except KeyboardInterrupt:
+            print "-> Exiting.."
+            for worker in processes:
+                worker.terminate()
+                worker.join()
             
         # delete orphans
         # print "Done fingerprinting. Deleting orphaned fingerprints..."
@@ -77,11 +83,16 @@ class Dejavu():
             # convert to WAV
             wavout_path = self.converter.convert(filename, extension, Converter.WAV, output)
 
+            # for each channel perform FFT analysis and fingerprinting
+            try:            
+                channels = self.extract_channels(wavout_path)
+            except AssertionError, e:
+                print "-> File not supported, skipping."
+                continue
+
             # insert song name into database
             song_id = sql_connection.insert_song(filename)
 
-            # for each channel perform FFT analysis and fingerprinting
-            channels = self.extract_channels(wavout_path)
             for c in range(len(channels)):
                 channel = channels[c]
                 print "-> Fingerprinting channel %d of song %s..." % (c+1, filename)
@@ -89,7 +100,6 @@ class Dejavu():
 
             # remove wav file if not required
             if not keep_wav:
-                print "removing ", wavout_path
                 os.unlink(wavout_path)            
 
             # only after done fingerprinting do confirm
