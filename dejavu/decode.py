@@ -15,8 +15,21 @@ def find_files(path, extensions):
                 yield (p, extension)
 
 
-def read(filename):
+def read(filename, limit=None):
+    """
+    Reads any file supported by pydub (ffmpeg) and returns the data contained
+    within.
+
+    Can be optionally limited to a certain amount of seconds from the start
+    of the file by specifying the `limit` parameter. This is the amount of
+    seconds from the start of the file.
+
+    returns: (samplerate, channels)
+    """
     audiofile = AudioSegment.from_file(filename)
+
+    if limit:
+        audiofile = audiofile[:limit * 1000]
 
     data = np.fromstring(audiofile._data, np.int16)
 
