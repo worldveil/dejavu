@@ -1,5 +1,5 @@
 from dejavu.database import SQLDatabase
-from dejavu.convert import Converter
+import dejavu.decode as decoder
 import fingerprint
 from scipy.io import wavfile
 from multiprocessing import Process
@@ -16,8 +16,6 @@ class Dejavu(object):
         # initialize db
         self.db = SQLDatabase(**config.get("database", {}))
 
-        # create components
-        self.converter = Converter()
         #self.fingerprinter = Fingerprinter(self.config)
         self.db.setup()
 
@@ -41,7 +39,7 @@ class Dejavu(object):
     def do_fingerprint(self, path, output, extensions, nprocesses):
 
         # convert files, shuffle order
-        files = self.converter.find_files(path, extensions)
+        files = decoder.find_files(path, extensions)
         random.shuffle(files)
         files_split = self.chunkify(files, nprocesses)
 
@@ -74,14 +72,11 @@ class Dejavu(object):
                 print("-> Already fingerprinted, continuing...")
                 continue
 
-            # convert to WAV
-            wavout_path = self.converter.convert(filename, extension, Converter.WAV, output, song_name)
+            channels, Fs = decoder.read(filename)
 
             # insert song name into database
             song_id = sql_connection.insert_song(song_name)
 
-            # for each channel perform FFT analysis and fingerprinting
-            channels, Fs = self.extract_channels(wavout_path)
             for c in range(len(channels)):
                 channel = channels[c]
                 print "-> Fingerprinting channel %d of song %s..." % (c+1, song_name)

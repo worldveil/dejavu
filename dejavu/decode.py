@@ -24,7 +24,7 @@ def read(filename, limit=None):
     of the file by specifying the `limit` parameter. This is the amount of
     seconds from the start of the file.
 
-    returns: (samplerate, channels)
+    returns: (channels, samplerate)
     """
     audiofile = AudioSegment.from_file(filename)
 
@@ -37,4 +37,4 @@ def read(filename, limit=None):
     for chn in xrange(audiofile.channels):
         channels.append(data[chn::audiofile.channels])
 
-    return audiofile.frame_rate, channels
+    return channels, audiofile.frame_rate
