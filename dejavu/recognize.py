@@ -26,8 +26,7 @@ class FileRecognizer(BaseRecognizer):
         super(FileRecognizer, self).__init__(dejavu)
 
     def recognize_file(self, filename):
-        Fs, frames = decoder.read(filename)
-        self.Fs = Fs
+        frames, self.Fs = decoder.read(filename)
 
         t = time.time()
         match = self._recognize(*frames)
