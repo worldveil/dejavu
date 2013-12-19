@@ -36,7 +36,8 @@ Now you're ready to start fingerprinting your audio collection!
 
 Let's say we want to fingerprint all of July 2013's VA US Top 40 hits. 
 
-Start by creating a Dejavu object. 
+Start by creating a Dejavu object with your configurations settings (Dejavu takes an ordinary Python dictionary for the settings).
+
 ```python
 >>> from dejavu import Dejavu
 >>> config = {
