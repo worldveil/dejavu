@@ -99,7 +99,7 @@ class MicrophoneRecognizer(BaseRecognizer):
     def get_recorded_time(self):
         return len(self.data[0]) / self.rate
 
-    def recognize(self, seconds=None):
+    def recognize(self, seconds=10):
         self.start_recording()
         for i in range(0, int(self.samplerate / self.chunksize
                               * seconds)):
