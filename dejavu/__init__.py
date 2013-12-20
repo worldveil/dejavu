@@ -1,4 +1,4 @@
-from dejavu.database import SQLDatabase
+from dejavu.database import get_database
 import dejavu.decoder as decoder
 import fingerprint
 from multiprocessing import Process, cpu_count
@@ -13,8 +13,9 @@ class Dejavu(object):
         self.config = config
 
         # initialize db
-        self.db = SQLDatabase(**config.get("database", {}))
+        db_cls = get_database(config.get("database_type", None))
 
+        self.db = db_cls(**config.get("database", {}))
         self.db.setup()
 
         # get songs previously indexed
