@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from itertools import izip_longest
+from itertools import izip_longest, ifilter
 import Queue
 
 import MySQLdb as mysql
@@ -302,10 +302,17 @@ class SQLDatabase(Database):
                     # (sid, db_offset - song_sampled_offset)
                     yield (sid, offset - mapper[hash])
 
+    def __getstate__(self):
+        return (self._options,)
+
+    def __setstate__(self, state):
+        self._options, = state
+        self.cursor = cursor_factory(**self._options)
+
 
 def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
-    return izip_longest(fillvalue=fillvalue, *args)
+    return (ifilter(None, values) for values in izip_longest(fillvalue=fillvalue, *args))
 
 
 def cursor_factory(**factory_options):
