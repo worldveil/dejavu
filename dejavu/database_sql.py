@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from itertools import izip_longest, ifilter
+from itertools import izip_longest
 import Queue
 
 import MySQLdb as mysql
@@ -312,7 +312,8 @@ class SQLDatabase(Database):
 
 def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
-    return (ifilter(None, values) for values in izip_longest(fillvalue=fillvalue, *args))
+    return (filter(None, values) for values
+            in izip_longest(fillvalue=fillvalue, *args))
 
 
 def cursor_factory(**factory_options):
