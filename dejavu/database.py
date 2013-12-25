@@ -1,325 +1,170 @@
-import MySQLdb as mysql
-import MySQLdb.cursors as cursors
-import os
+from __future__ import absolute_import
+import abc
 
-class SQLDatabase():
-    """
-    Queries:
 
-    1) Find duplicates (shouldn't be any, though):
+class Database(object):
+    __metaclass__ = abc.ABCMeta
 
-        select `hash`, `song_id`, `offset`, count(*) cnt 
-        from fingerprints 
-        group by `hash`, `song_id`, `offset` 
-        having cnt > 1
-        order by cnt asc;
+    # Name of your Database subclass, this is used in configuration
+    # to refer to your class
+    type = None
 
-    2) Get number of hashes by song:
+    def __init__(self):
+        super(Database, self).__init__()
 
-        select song_id, song_name, count(song_id) as num 
-        from fingerprints 
-        natural join songs
-        group by song_id 
-        order by count(song_id) desc;
+    def before_fork(self):
+        """
+        Called before the database instance is given to the new process
+        """
+        pass
 
-    3) get hashes with highest number of collisions
+    def after_fork(self):
+        """
+        Called after the database instance has been given to the new process
 
-        select 
-            hash, 
-            count(distinct song_id) as n 
-        from fingerprints 
-        group by `hash` 
-        order by n DESC;
-
-    => 26 different songs with same fingerprint (392 times):
-    
-        select songs.song_name, fingerprints.offset 
-        from fingerprints natural join songs 
-        where fingerprints.hash = "08d3c833b71c60a7b620322ac0c0aba7bf5a3e73";
-    """
-
-    # config keys
-    CONNECTION = "connection"
-    KEY_USERNAME = "username"
-    KEY_DATABASE = "database"
-    KEY_PASSWORD = "password"
-    KEY_HOSTNAME = "hostname"
-
-    # tables
-    FINGERPRINTS_TABLENAME = "fingerprints"
-    SONGS_TABLENAME = "songs"
-
-    # fields
-    FIELD_HASH = "hash"
-    FIELD_SONG_ID = "song_id"
-    FIELD_OFFSET = "offset"
-    FIELD_SONGNAME = "song_name"
-    FIELD_FINGERPRINTED = "fingerprinted"
-
-    # creates
-    CREATE_FINGERPRINTS_TABLE = """ 
-    CREATE TABLE IF NOT EXISTS `%s` ( 
-         `%s` binary(10) not null,
-         `%s` mediumint unsigned not null, 
-         `%s` int unsigned not null, 
-         INDEX(%s),
-         UNIQUE(%s, %s, %s)
-    );""" % (FINGERPRINTS_TABLENAME, FIELD_HASH, 
-            FIELD_SONG_ID, FIELD_OFFSET, FIELD_HASH,
-            FIELD_SONG_ID, FIELD_OFFSET, FIELD_HASH)
-    
-    CREATE_SONGS_TABLE = """
-    CREATE TABLE IF NOT EXISTS `%s` (
-        `%s` mediumint unsigned not null auto_increment, 
-        `%s` varchar(250) not null,
-        `%s` tinyint default 0,
-        PRIMARY KEY (`%s`),
-        UNIQUE KEY `%s` (`%s`)
-    );""" % (SONGS_TABLENAME, FIELD_SONG_ID, FIELD_SONGNAME, FIELD_FINGERPRINTED,
-            FIELD_SONG_ID, FIELD_SONG_ID, FIELD_SONG_ID)
-
-    # inserts
-    INSERT_FINGERPRINT = "INSERT IGNORE INTO %s (%s, %s, %s) VALUES (UNHEX(%%s), %%s, %%s)" % (
-        FINGERPRINTS_TABLENAME, FIELD_HASH, FIELD_SONG_ID, FIELD_OFFSET) # ignore duplicates and don't insert them
-    INSERT_SONG = "INSERT INTO %s (%s) VALUES (%%s);" % (
-        SONGS_TABLENAME, FIELD_SONGNAME)
-
-    # selects
-    SELECT = "SELECT %s, %s FROM %s WHERE %s = UNHEX(%%s);" % (FIELD_SONG_ID, FIELD_OFFSET, FINGERPRINTS_TABLENAME, FIELD_HASH)
-    SELECT_ALL = "SELECT %s, %s FROM %s;" % (FIELD_SONG_ID, FIELD_OFFSET, FINGERPRINTS_TABLENAME)
-    SELECT_SONG = "SELECT %s FROM %s WHERE %s = %%s" % (FIELD_SONGNAME, SONGS_TABLENAME, FIELD_SONG_ID)
-    SELECT_NUM_FINGERPRINTS = "SELECT COUNT(*) as n FROM %s" % (FINGERPRINTS_TABLENAME)
-    
-    SELECT_UNIQUE_SONG_IDS = "SELECT COUNT(DISTINCT %s) as n FROM %s WHERE %s = 1;" % (FIELD_SONG_ID, SONGS_TABLENAME, FIELD_FINGERPRINTED)
-    SELECT_SONGS = "SELECT %s, %s FROM %s WHERE %s = 1;" % (FIELD_SONG_ID, FIELD_SONGNAME, SONGS_TABLENAME, FIELD_FINGERPRINTED)
-
-    # drops
-    DROP_FINGERPRINTS = "DROP TABLE IF EXISTS %s;" % FINGERPRINTS_TABLENAME
-    DROP_SONGS = "DROP TABLE IF EXISTS %s;" % SONGS_TABLENAME
-
-    # update
-    UPDATE_SONG_FINGERPRINTED = "UPDATE %s SET %s = 1 WHERE %s = %%s" % (SONGS_TABLENAME, FIELD_FINGERPRINTED, FIELD_SONG_ID)
-
-    # delete
-    DELETE_UNFINGERPRINTED = "DELETE FROM %s WHERE %s = 0;" % (SONGS_TABLENAME, FIELD_FINGERPRINTED)
-    DELETE_ORPHANS = """
-    delete from fingerprints 
-    where not exists (
-        select * from songs where fingerprints.song_id  = songs.song_id
-    )"""
-    
-    def __init__(self, hostname, username, password, database):
-        # connect
-        self.database = database
-        try:
-            # http://www.halfcooked.com/mt/archives/000969.html
-            self.connection = mysql.connect(
-                hostname, username, password, 
-                database, cursorclass=cursors.DictCursor)  
-
-            self.connection.autocommit(False) # for fast bulk inserts
-            self.cursor = self.connection.cursor()
-
-        except mysql.Error, e:
-            print "Connection error %d: %s" % (e.args[0], e.args[1])
+        This will be called in the new process.
+        """
+        pass
 
     def setup(self):
-        try:
-            # create fingerprints table
-            self.cursor.execute("USE %s;" % self.database)
-            self.cursor.execute(SQLDatabase.CREATE_FINGERPRINTS_TABLE)
-            self.cursor.execute(SQLDatabase.CREATE_SONGS_TABLE)
-            self.delete_unfingerprinted_songs()
-            self.connection.commit()
-        except mysql.Error, e:
-            print "Connection error %d: %s" % (e.args[0], e.args[1])
-            self.connection.rollback()
+        """
+        Called on creation or shortly afterwards.
+        """
+        pass
 
+    @abc.abstractmethod
     def empty(self):
         """
-            Drops all tables and re-adds them. Be carfeul with this!
+        Called when the database should be cleared of all data.
         """
-        try:
-            self.cursor.execute("USE %s;" % self.database)
+        pass
 
-            # drop tables
-            self.cursor.execute(SQLDatabase.DROP_FINGERPRINTS)
-            self.cursor.execute(SQLDatabase.DROP_SONGS)
-
-            # recreate
-            self.cursor.execute(SQLDatabase.CREATE_FINGERPRINTS_TABLE)
-            self.cursor.execute(SQLDatabase.CREATE_SONGS_TABLE)
-            self.connection.commit()
-
-        except mysql.Error, e:
-            print "Error in empty(), %d: %s" % (e.args[0], e.args[1])
-            self.connection.rollback()
-            
-    def delete_orphans(self):
-        try:
-            self.cursor = self.connection.cursor()
-            ### TODO: SQLDatabase.DELETE_ORPHANS is not performant enough, need better query
-            ###     to delete fingerprints for which no song is tied to.
-            #self.cursor.execute(SQLDatabase.DELETE_ORPHANS)
-            #self.connection.commit()
-        except mysql.Error, e:
-            print "Error in delete_orphans(), %d: %s" % (e.args[0], e.args[1])
-            self.connection.rollback()
-    
+    @abc.abstractmethod
     def delete_unfingerprinted_songs(self):
-        try:
-            self.cursor = self.connection.cursor()
-            self.cursor.execute(SQLDatabase.DELETE_UNFINGERPRINTED)
-            self.connection.commit()
-        except mysql.Error, e:
-            print "Error in delete_unfingerprinted_songs(), %d: %s" % (e.args[0], e.args[1])
-            self.connection.rollback()
+        """
+        Called to remove any song entries that do not have any fingerprints
+        associated with them.
+        """
+        pass
 
+    @abc.abstractmethod
     def get_num_songs(self):
         """
-            Returns number of songs the database has fingerprinted.
+        Returns the amount of songs in the database.
         """
-        try:
-            self.cursor = self.connection.cursor()
-            self.cursor.execute(SQLDatabase.SELECT_UNIQUE_SONG_IDS)
-            record = self.cursor.fetchone()
-            return int(record['n'])
-        except mysql.Error, e:
-            print "Error in get_num_songs(), %d: %s" % (e.args[0], e.args[1])
-            
+        pass
+
+    @abc.abstractmethod
     def get_num_fingerprints(self):
         """
-            Returns number of fingerprints the database has fingerprinted.
+        Returns the number of fingerprints in the database.
         """
-        try:
-            self.cursor = self.connection.cursor()
-            self.cursor.execute(SQLDatabase.SELECT_NUM_FINGERPRINTS)
-            record = self.cursor.fetchone()
-            return int(record['n'])
-        except mysql.Error, e:
-            print "Error in get_num_songs(), %d: %s" % (e.args[0], e.args[1])
-    
+        pass
 
-    def set_song_fingerprinted(self, song_id):
+    @abc.abstractmethod
+    def set_song_fingerprinted(self, sid):
         """
-            Set the fingerprinted flag to TRUE (1) once a song has been completely
-            fingerprinted in the database. 
-        """
-        try:
-            self.cursor = self.connection.cursor()
-            self.cursor.execute(SQLDatabase.UPDATE_SONG_FINGERPRINTED, song_id)
-            self.connection.commit()
-        except mysql.Error, e:
-            print "Error in  set_song_fingerprinted(), %d: %s" % (e.args[0], e.args[1])
-            self.connection.rollback()
+        Sets a specific song as having all fingerprints in the database.
 
+        sid: Song identifier
+        """
+        pass
+
+    @abc.abstractmethod
     def get_songs(self):
         """
-            Return songs that have the fingerprinted flag set TRUE (1). 
+        Returns all fully fingerprinted songs in the database.
         """
-        try:
-            self.cursor.execute(SQLDatabase.SELECT_SONGS)
-            return self.cursor.fetchall()
-        except mysql.Error, e:
-            print "Error in get_songs(), %d: %s" % (e.args[0], e.args[1])
-            return None
-            
+        pass
+
+    @abc.abstractmethod
     def get_song_by_id(self, sid):
         """
-            Returns song by its ID.
+        Return a song by its identifier
+
+        sid: Song identifier
         """
-        try:
-            self.cursor.execute(SQLDatabase.SELECT_SONG, (sid,))
-            return self.cursor.fetchone()
-        except mysql.Error, e:
-            print "Error in get_songs(), %d: %s" % (e.args[0], e.args[1])
-            return None 
-    
+        pass
 
-    def insert(self, key, value):
+    @abc.abstractmethod
+    def insert(self, hash, sid, offset):
         """
-            Insert a (sha1, song_id, offset) row into database. 
+        Inserts a single fingerprint into the database.
 
-            key is a sha1 hash, value = (song_id, offset)
+          hash: Part of a sha1 hash, in hexadecimal format
+           sid: Song identifier this fingerprint is off
+        offset: The offset this hash is from
         """
-        try:
-            args = (key, value[0], value[1])
-            self.cursor.execute(SQLDatabase.INSERT_FINGERPRINT, args)
-        except mysql.Error, e:
-            print "Error in insert(), %d: %s" % (e.args[0], e.args[1])
-            self.connection.rollback()
+        pass
 
-    def insert_song(self, songname):
+    @abc.abstractmethod
+    def insert_song(self, song_name):
         """
-            Inserts song in the database and returns the ID of the inserted record.
+        Inserts a song name into the database, returns the new
+        identifier of the song.
+
+        song_name: The name of the song.
         """
-        try:
-            self.cursor.execute(SQLDatabase.INSERT_SONG, (songname,))
-            self.connection.commit()
-            return int(self.cursor.lastrowid)
-        except mysql.Error, e:
-            print "Error in insert_song(), %d: %s" % (e.args[0], e.args[1])
-            self.connection.rollback()
-            return None
+        pass
 
-    def query(self, key):
+    @abc.abstractmethod
+    def query(self, hash):
         """
-            Return all tuples associated with hash. 
+        Returns all matching fingerprint entries associated with
+        the given hash as parameter.
 
-            If hash is None, returns all entries in the 
-            database (be careful with that one!).
+        hash: Part of a sha1 hash, in hexadecimal format
         """
-        # select all if no key
-        if key is not None:
-            sql = SQLDatabase.SELECT
-        else:
-            sql = SQLDatabase.SELECT_ALL
+        pass
 
-        matches = []
-        try:
-            self.cursor.execute(sql, (key,))
-
-            # collect all matches
-            records = self.cursor.fetchall()
-            for record in records:
-                matches.append((record[SQLDatabase.FIELD_SONG_ID], record[SQLDatabase.FIELD_OFFSET]))
-
-        except mysql.Error, e:
-            print "Error in query(), %d: %s" % (e.args[0], e.args[1])
-
-        return matches
-
+    @abc.abstractmethod
     def get_iterable_kv_pairs(self):
         """
-            Returns all tuples in database. 
+        Returns all fingerprints in the database.
         """
-        return self.query(None)
+        pass
 
-    def insert_hashes(self, hashes):
+    @abc.abstractmethod
+    def insert_hashes(self, sid, hashes):
         """
-            Insert series of hash => song_id, offset
-            values into the database. 
-        """
-        for h in hashes:
-            sha1, val = h
-            self.insert(sha1, val)
-        self.connection.commit()
+        Insert a multitude of fingerprints.
 
+           sid: Song identifier the fingerprints belong to
+        hashes: A sequence of tuples in the format (hash, offset)
+        -   hash: Part of a sha1 hash, in hexadecimal format
+        - offset: Offset this hash was created from/at.
+        """
+        pass
+
+    @abc.abstractmethod
     def return_matches(self, hashes):
         """
-            Return the (song_id, offset_diff) tuples associated with 
-            a list of 
+        Searches the database for pairs of (hash, offset) values.
 
-                sha1 => (None, sample_offset)
+        hashes: A sequence of tuples in the format (hash, offset)
+        -   hash: Part of a sha1 hash, in hexadecimal format
+        - offset: Offset this hash was created from/at.
 
-            values.
+        Returns a sequence of (sid, offset_difference) tuples.
+
+                      sid: Song identifier
+        offset_difference: (offset - database_offset)
         """
-        matches = []
-        for h in hashes:
-            sha1, val = h
-            list_of_tups = self.query(sha1)
-            if list_of_tups:
-                for t in list_of_tups:
-                    # (song_id, db_offset, song_sampled_offset)
-                    matches.append((t[0], t[1] - val[1]))
-        return matches
+        pass
+
+
+def get_database(database_type=None):
+    # Default to using the mysql database
+    database_type = database_type or "mysql"
+    # Lower all the input.
+    database_type = database_type.lower()
+
+    for db_cls in Database.__subclasses__():
+        if db_cls.type == database_type:
+            return db_cls
+
+    raise TypeError("Unsupported database type supplied.")
+
+
+# Import our default database handler
+import dejavu.database_sql
