@@ -10,7 +10,7 @@ with open("dejavu.cnf") as f:
 # create a Dejavu instance
 djv = Dejavu(config)
 # Fingerprint all the mp3's in the directory we give it
-djv.fingerprint_directory("va_us_top_40/mp3", [".mp3"])
+djv.fingerprint_directory("mp3", [".mp3"])
 
 # Recognize audio from a file
 from dejavu.recognize import FileRecognizer
@@ -23,4 +23,4 @@ song = djv.recognize(MicrophoneRecognizer, seconds=2)
 # Or use a recognizer without the shortcut, in anyway you would like
 from dejavu.recognize import FileRecognizer
 recognizer = FileRecognizer(djv)
-song = recognizer.recognize_file("va_us_top_40/wav/17_-_#Beautiful_-_Mariah_Carey_ft.wav")
+song = recognizer.recognize_file("mp3/sail.mp3")

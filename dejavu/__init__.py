@@ -16,6 +16,12 @@ class Dejavu(object):
 
         self.db = db_cls(**config.get("database", {}))
         self.db.setup()
+        
+        # if we should limit seconds fingerprinted, 
+        # None|-1 means use entire track
+        self.limit = self.config.get("fingerprint_limit", None)
+        if self.limit == -1: # for JSON compatibility
+            self.limit = None
 
         # get songs previously indexed
         # TODO: should probably use a checksum of the file instead of filename
@@ -46,7 +52,7 @@ class Dejavu(object):
                 continue
 
             result = pool.apply_async(_fingerprint_worker,
-                                      (filename, self.db))
+                                      (filename, self.db, self.limit))
             results.append(result)
 
         while len(results):
@@ -134,10 +140,10 @@ class Dejavu(object):
         return r.recognize(*options, **kwoptions)
 
 
-def _fingerprint_worker(filename, db):
+def _fingerprint_worker(filename, db, limit):
     song_name, extension = os.path.splitext(os.path.basename(filename))
 
-    channels, Fs = decoder.read(filename)
+    channels, Fs = decoder.read(filename, limit)
 
     # insert song into database
     sid = db.insert_song(song_name)

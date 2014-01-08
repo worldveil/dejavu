@@ -70,6 +70,36 @@ You'll have a lot of fingerprints once it completes a large folder of mp3s:
 
 Also, any subsequent calls to `fingerprint_file` or `fingerprint_directory` will fingerprint and add those songs to the database as well. It's meant to simulate a system where as new songs are released, they are fingerprinted and added to the database seemlessly without stopping the system. 
 
+## Configuration options
+
+The configuration object to the Dejavu constructor must be a dictionary. 
+
+The following keys are mandatory:
+
+* `database`, with a value as a dictionary with keys that the database you are using will accept. For example with MySQL, the keys must can be anything that the [`MySQLdb.connect()`](http://mysql-python.sourceforge.net/MySQLdb.html) function will accept. 
+
+The following keys are optional:
+
+* `fingerprint_limit`: allows you to control how many seconds of each audio file to fingerprint. Leaving out this key, or alternatively using `-1` and `None` will cause Dejavu to fingerprint the entire audio file. Default value is `None`.
+* `database_type`: as of now, only `mysql` (the default value) is supported. If you'd like to subclass `Database` and add another, please fork and send a pull request!
+
+An example configuration is as follows:
+
+```python
+>>> from dejavu import Dejavu
+>>> config = {
+...     "database": {
+...         "host": "127.0.0.1",
+...         "user": "root",
+...         "passwd": "Password123", 
+...         "db": "dejavu_db",
+...     },
+...     "database_type" : "mysql",
+...     "fingerprint_limit" : 10
+... }
+>>> djv = Dejavu(config)
+```
+
 ## Recognizing
 
 There are two ways to recognize audio using Dejavu. You can use Dejavu interactively through the terminal. Assuming you've already instantiated a Dejavu object, you can match audio through your computer's microphone:
