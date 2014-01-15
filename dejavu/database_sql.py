@@ -4,7 +4,7 @@ import Queue
 import MySQLdb as mysql
 from MySQLdb.cursors import DictCursor
 
-from dejavu.database import Database
+from dejavu.database import Database, grouper
 
 
 class SQLDatabase(Database):
@@ -270,7 +270,7 @@ class SQLDatabase(Database):
         """
         values = []
         for hash, offset in hashes:
-            values.append((hash, sid, offset))
+            values.append((hash.upper(), sid, offset))
 
         with self.cursor() as cur:
             for split_values in grouper(values, 1000):
