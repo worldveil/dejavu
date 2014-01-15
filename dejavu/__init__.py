@@ -57,7 +57,7 @@ class Dejavu(object):
                 continue
 
             result = pool.apply_async(_fingerprint_worker,
-                                      (filename, self.db, self.limit))
+                                      (filename, self.limit))
             results.append(result)
 
         while len(results):
@@ -65,7 +65,10 @@ class Dejavu(object):
                 # TODO: Handle errors gracefully and return them to the callee
                 # in some way.
                 try:
-                    result.get(timeout=2)
+                    song_filename, hashes = result.get(timeout=2)
+                    sid = self.db.insert_song(song_filename)
+                    self.db.insert_hashes(sid, hashes)
+                    self.db.set_song_fingerprinted(sid)
                 except multiprocessing.TimeoutError:
                     continue
                 except:
@@ -146,13 +149,12 @@ class Dejavu(object):
         return r.recognize(*options, **kwoptions)
 
 
-def _fingerprint_worker(filename, db, limit):
-    song_name, extension = os.path.splitext(os.path.basename(filename))
-
+def _fingerprint_worker(filename, limit):
+    # song_name, extension = os.path.splitext(os.path.basename(filename))
     channels, Fs = decoder.read(filename, limit)
 
     # insert song into database
-    sid = db.insert_song(song_name)
+    # sid = db.insert_song(song_name)
 
     channel_amount = len(channels)
     for channeln, channel in enumerate(channels):
@@ -166,13 +168,14 @@ def _fingerprint_worker(filename, db, limit):
 
         print("Inserting fingerprints for channel %d/%d for %s" %
               (channeln + 1, channel_amount, filename))
-        db.insert_hashes(sid, hashes)
+        # db.insert_hashes(sid, hashes)
         print("Finished inserting for channel %d/%d for  %s" %
               (channeln + 1, channel_amount, filename))
 
     print("Marking %s finished" % (filename,))
-    db.set_song_fingerprinted(sid)
+    # db.set_song_fingerprinted(sid)
     print("%s finished" % (filename,))
+    return filename, hashes
 
 
 def chunkify(lst, n):

@@ -3,7 +3,7 @@ sys.path.append(".")
 
 from dejavu import Dejavu
 
-# database uris examples:
+# Database URI examples:
 # mysql: 'mysql+mysqldb://scott:tiger@localhost/foo'
 # postgresql: 'postgresql://scott:tiger@localhost/mydatabase'
 # sqlite: 'sqlite:///foo.db'
@@ -24,11 +24,11 @@ config = {
 #         "passwd": "",
 #         "db": "",
 #     },
-#     "fingerprint_limit": 10,
+#     "fingerprint_limit" : 10,
 # }
 
 # create a Dejavu instance
 djv = Dejavu(config)
 
 # Fingerprint a file
-djv.fingerprint_file("test.mp3")
+djv.fingerprint_file("tests/test1.mp3")

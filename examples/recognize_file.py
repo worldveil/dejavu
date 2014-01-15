@@ -33,5 +33,5 @@ config = {
 djv = Dejavu(config)
 
 # Recognize audio from a file
-song = djv.recognize(FileRecognizer, "test.mp3")
+song = djv.recognize(FileRecognizer, "tests/test1.mp3")
 print song
