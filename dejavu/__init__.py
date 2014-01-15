@@ -1,4 +1,6 @@
 from dejavu.database import get_database
+from dejavu.database_orm import ORMDatabase
+
 import dejavu.decoder as decoder
 import fingerprint
 import multiprocessing
@@ -12,15 +14,19 @@ class Dejavu(object):
         self.config = config
 
         # initialize db
-        db_cls = get_database(config.get("database_type", None))
+        if config.get("database_backend", None) == "plain":
+            db_cls = get_database(config.get("database_type", None))
+            self.db = db_cls(**config.get("database", {}))
+        elif config.get("database_backend", None) == "orm":
+            db_cls = ORMDatabase
+            self.db = db_cls(**config)
 
-        self.db = db_cls(**config.get("database", {}))
         self.db.setup()
-        
-        # if we should limit seconds fingerprinted, 
+
+        # if we should limit seconds fingerprinted,
         # None|-1 means use entire track
         self.limit = self.config.get("fingerprint_limit", None)
-        if self.limit == -1: # for JSON compatibility
+        if self.limit == -1:  # for JSON compatibility
             self.limit = None
 
         # get songs previously indexed
@@ -30,7 +36,6 @@ class Dejavu(object):
         for song in self.songs:
             song_name = song[self.db.FIELD_SONGNAME]
             self.songnames_set.add(song_name)
-            print "Added: %s to the set of fingerprinted songs..." % song_name
 
     def fingerprint_directory(self, path, extensions, nprocesses=None):
         # Try to use the maximum amount of processes if not given.
@@ -73,17 +78,18 @@ class Dejavu(object):
         pool.close()
         pool.join()
 
-    def fingerprint_file(self, filepath, song_name=None):
-        channels, Fs = decoder.read(filepath)
-
-        if not song_name:
-            print "Song name: %s" % song_name
-            song_name = decoder.path_to_songname(filepath)
-        song_id = self.db.insert_song(song_name)
+    def fingerprint_file(self, filepath):
+        if filepath in self.songnames_set:
+            print "%s already fingerprinted, skipping..." % filepath
+            return
+        channels, Fs = decoder.read(filepath, self.limit)
+        song_id = self.db.insert_song(filepath)
 
         for data in channels:
             hashes = fingerprint.fingerprint(data, Fs=Fs)
             self.db.insert_hashes(song_id, hashes)
+        print "Fingerprinted file %s ", filepath
+        self.db.set_song_fingerprinted(song_id)
 
     def find_matches(self, samples, Fs=fingerprint.DEFAULT_FS):
         hashes = fingerprint.fingerprint(samples, Fs=Fs)

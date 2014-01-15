@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-from itertools import izip_longest
 import Queue
 
 import MySQLdb as mysql
@@ -308,12 +307,6 @@ class SQLDatabase(Database):
     def __setstate__(self, state):
         self._options, = state
         self.cursor = cursor_factory(**self._options)
-
-
-def grouper(iterable, n, fillvalue=None):
-    args = [iter(iterable)] * n
-    return (filter(None, values) for values
-            in izip_longest(fillvalue=fillvalue, *args))
 
 
 def cursor_factory(**factory_options):
