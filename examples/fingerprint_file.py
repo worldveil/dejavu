@@ -1,3 +1,6 @@
+import sys
+sys.path.append(".")
+
 from dejavu import Dejavu
 
 # database uris examples:

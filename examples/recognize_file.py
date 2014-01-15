@@ -1,3 +1,6 @@
+import sys
+sys.path.append(".")
+
 from dejavu import Dejavu
 from dejavu.recognize import FileRecognizer
 
@@ -30,5 +33,5 @@ config = {
 djv = Dejavu(config)
 
 # Recognize audio from a file
-song = djv.recognize(FileRecognizer, "test2.mp3")
+song = djv.recognize(FileRecognizer, "test.mp3")
 print song
