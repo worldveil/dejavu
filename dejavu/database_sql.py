@@ -270,7 +270,7 @@ class SQLDatabase(Database):
         """
         values = []
         for hash, offset in hashes:
-            values.append((hash.upper(), sid, offset))
+            values.append((hash, sid, offset))
 
         with self.cursor() as cur:
             for split_values in grouper(values, 1000):
@@ -284,7 +284,7 @@ class SQLDatabase(Database):
         # Create a dictionary of hash => offset pairs for later lookups
         mapper = {}
         for hash, offset in hashes:
-            mapper[hash.upper()] = offset
+            mapper[hash] = offset
 
         # Get an iteratable of all the hashes we need
         values = mapper.keys()

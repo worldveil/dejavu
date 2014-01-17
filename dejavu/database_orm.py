@@ -146,7 +146,7 @@ class ORMDatabase(Database):
         values into the database.
         """
         for hash, offset in hashes:
-            new_fingerprint = Fingerprint(fingerprint_hash=hash.upper(),
+            new_fingerprint = Fingerprint(fingerprint_hash=hash,
                                           song_id=sid,
                                           offset=offset)
             self._DBSession.add(new_fingerprint)
@@ -160,7 +160,7 @@ class ORMDatabase(Database):
         # Create a dictionary of hash => offset pairs for later lookups
         mapper = {}
         for hash, offset in hashes:
-            mapper[hash.upper()] = offset
+            mapper[hash] = offset
 
         # Get an iteratable of all the hashes we need
         values = mapper.keys()
