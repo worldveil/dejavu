@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+from itertools import izip_longest
 import abc
 
 
@@ -164,6 +164,11 @@ def get_database(database_type=None):
             return db_cls
 
     raise TypeError("Unsupported database type supplied.")
+
+def grouper(iterable, n, fillvalue=None):
+    args = [iter(iterable)] * n
+    return (filter(None, values) for values
+            in izip_longest(fillvalue=fillvalue, *args))
 
 
 # Import our default database handler

@@ -1,11 +1,10 @@
 from __future__ import absolute_import
-from itertools import izip_longest
 import Queue
 
 import MySQLdb as mysql
 from MySQLdb.cursors import DictCursor
 
-from dejavu.database import Database
+from dejavu.database import Database, grouper
 
 
 class SQLDatabase(Database):
@@ -285,7 +284,7 @@ class SQLDatabase(Database):
         # Create a dictionary of hash => offset pairs for later lookups
         mapper = {}
         for hash, offset in hashes:
-            mapper[hash.upper()] = offset
+            mapper[hash] = offset
 
         # Get an iteratable of all the hashes we need
         values = mapper.keys()
@@ -308,12 +307,6 @@ class SQLDatabase(Database):
     def __setstate__(self, state):
         self._options, = state
         self.cursor = cursor_factory(**self._options)
-
-
-def grouper(iterable, n, fillvalue=None):
-    args = [iter(iterable)] * n
-    return (filter(None, values) for values
-            in izip_longest(fillvalue=fillvalue, *args))
 
 
 def cursor_factory(**factory_options):
