@@ -48,7 +48,7 @@ class Dejavu(object):
 
         pool = multiprocessing.Pool(nprocesses)
 
-        results = []
+        filenames_to_fingerprint = []
         for filename, _ in decoder.find_files(path, extensions):
 
             # don't refingerprint already fingerprinted files
@@ -56,43 +56,49 @@ class Dejavu(object):
                 print "%s already fingerprinted, continuing..." % filename
                 continue
 
-            result = pool.apply_async(_fingerprint_worker,
-                                      (filename, self.limit))
-            results.append(result)
+            filenames_to_fingerprint.append(filename)
 
-        while len(results):
-            for result in results[:]:
-                # TODO: Handle errors gracefully and return them to the callee
-                # in some way.
-                try:
-                    song_filename, hashes = result.get(timeout=2)
-                    sid = self.db.insert_song(song_filename)
-                    self.db.insert_hashes(sid, hashes)
-                    self.db.set_song_fingerprinted(sid)
-                except multiprocessing.TimeoutError:
-                    continue
-                except:
-                    import traceback, sys
-                    traceback.print_exc(file=sys.stdout)
-                    results.remove(result)
-                else:
-                    results.remove(result)
+        # Prepare _fingerprint_worker input
+        worker_input = zip(filenames_to_fingerprint,
+                           [self.limit] * len(filenames_to_fingerprint))
+
+        # Send off our tasks
+        iterator = pool.imap_unordered(_fingerprint_worker,
+                                       worker_input)
+
+        # Loop till we have all of them
+        while True:
+            try:
+                song_name, hashes = iterator.next()
+            except multiprocessing.TimeoutError:
+                continue
+            except StopIteration:
+                break
+            except:
+                print("Failed fingerprinting")
+
+                # Print traceback because we can't reraise it here
+                import traceback, sys
+                traceback.print_exc(file=sys.stdout)
+            else:
+                sid = self.db.insert_song(song_name)
+
+                self.db.insert_hashes(sid, hashes)
+
+                self.db.set_song_fingerprinted(sid)
 
         pool.close()
         pool.join()
 
-    def fingerprint_file(self, filepath):
-        if filepath in self.songnames_set:
-            print "%s already fingerprinted, skipping..." % filepath
-            return
-        channels, Fs = decoder.read(filepath, self.limit)
-        song_id = self.db.insert_song(filepath)
+    def fingerprint_file(self, filepath, song_name=None):
+        song_name, hashes = _fingerprint_worker(filepath,
+                                                self.limit,
+                                                song_name=song_name)
 
-        for data in channels:
-            hashes = fingerprint.fingerprint(data, Fs=Fs)
-            self.db.insert_hashes(song_id, hashes)
-        print "Fingerprinted file %s ", filepath
-        self.db.set_song_fingerprinted(song_id)
+        sid = self.db.insert_song(song_name)
+
+        self.db.insert_hashes(sid, hashes)
+        self.db.set_song_fingerprinted(sid)
 
     def find_matches(self, samples, Fs=fingerprint.DEFAULT_FS):
         hashes = fingerprint.fingerprint(samples, Fs=Fs)
@@ -139,7 +145,7 @@ class Dejavu(object):
             "song_id": song_id,
             "song_name": songname,
             "confidence": largest_count,
-            "offset" : largest
+            "offset": largest
         }
 
         return song
@@ -149,12 +155,21 @@ class Dejavu(object):
         return r.recognize(*options, **kwoptions)
 
 
-def _fingerprint_worker(filename, limit):
-    # song_name, extension = os.path.splitext(os.path.basename(filename))
+def _fingerprint_worker(filename, limit=None, song_name=None):
+    # Pool.imap sends arguments as tuples so we have to unpack
+    # them ourself.
+    try:
+        filename, limit = filename
+    except ValueError:
+        pass
+
+    songname, extension = os.path.splitext(os.path.basename(filename))
+
+    song_name = song_name or songname
+
     channels, Fs = decoder.read(filename, limit)
 
-    # insert song into database
-    # sid = db.insert_song(song_name)
+    result = set()
 
     channel_amount = len(channels)
     for channeln, channel in enumerate(channels):
@@ -166,16 +181,9 @@ def _fingerprint_worker(filename, limit):
         print("Finished channel %d/%d for %s" % (channeln + 1, channel_amount,
                                                  filename))
 
-        print("Inserting fingerprints for channel %d/%d for %s" %
-              (channeln + 1, channel_amount, filename))
-        # db.insert_hashes(sid, hashes)
-        print("Finished inserting for channel %d/%d for  %s" %
-              (channeln + 1, channel_amount, filename))
+        result |= set(hashes)
 
-    print("Marking %s finished" % (filename,))
-    # db.set_song_fingerprinted(sid)
-    print("%s finished" % (filename,))
-    return filename, hashes
+    return song_name, result
 
 
 def chunkify(lst, n):
