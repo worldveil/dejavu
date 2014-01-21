@@ -11,15 +11,15 @@ Base = declarative_base()
 
 class Song(Base):
     __tablename__ = "songs"
-    id = Column(Integer, primary_key=True)
+    song_id = Column(Integer, primary_key=True)
     song_name = Column(String(255))
     fingerprinted = Column(Integer, default=0)
 
 class Fingerprint(Base):
     __tablename__ = "fingerprints"
     id = Column(Integer, primary_key=True)
-    fingerprint_hash = Column(String(100))
-    song_id = Column(Integer, ForeignKey('songs.id'))
+    hash = Column(String(100))
+    song_id = Column(Integer, ForeignKey('songs.song_id'))
     offset = Column(Integer)
 
 
@@ -43,11 +43,6 @@ class ORMDatabase(Database):
         self._DBSession.remove()
         self._DBSession.configure(bind=self._engine, autoflush=False,
                                   expire_on_commit=False)
-
-    def after_fork(self):
-        # Clear the cursor cache, we don't want any stale connections from
-        # the previous process.
-        pass
 
     def setup(self):
         """
@@ -111,7 +106,7 @@ class ORMDatabase(Database):
         """
         Insert a (sha1, song_id, offset) row into database.
         """
-        new_fingerprint = Fingerprint(fingerprint_hash=hash, song_id=sid,
+        new_fingerprint = Fingerprint(hash=hash, song_id=sid,
                                       offset=offset)
         self._DBSession.add(new_fingerprint)
         self._DBSession.commit()
@@ -123,7 +118,7 @@ class ORMDatabase(Database):
         new_song = Song(song_name=songname, fingerprinted=0)
         self._DBSession.add(new_song)
         self._DBSession.commit()
-        return new_song.id
+        return new_song.song_id
 
     def query(self, hash):
         """
@@ -146,9 +141,9 @@ class ORMDatabase(Database):
         values into the database.
         """
         for hash, offset in hashes:
-            new_fingerprint = Fingerprint(fingerprint_hash=hash,
-                                          song_id=sid,
-                                          offset=offset)
+            new_fingerprint = Fingerprint(hash=hash,
+                                      song_id=sid,
+                                      offset=offset)
             self._DBSession.add(new_fingerprint)
         self._DBSession.commit()
 
@@ -165,8 +160,8 @@ class ORMDatabase(Database):
         # Get an iteratable of all the hashes we need
         values = mapper.keys()
         for split_values in grouper(values, 900):
-            results = self._DBSession.query(Fingerprint.fingerprint_hash, Fingerprint.song_id,
-                                  Fingerprint.offset).filter(Fingerprint.fingerprint_hash.in_(split_values))
+            results = self._DBSession.query(Fingerprint.hash, Fingerprint.song_id,
+                                  Fingerprint.offset).filter(Fingerprint.hash.in_(split_values))
             for hash, sid, offset in results:
                 # (sid, db_offset - song_sampled_offset)
                 yield (sid, offset - mapper[hash])
