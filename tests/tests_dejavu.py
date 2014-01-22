@@ -39,7 +39,7 @@ class DejavuORMTestCases(unittest.TestCase):
         list_dir = [f for f in os.listdir("tests") if f[-4:] == ".mp3"]
         self.djv.fingerprint_directory("tests", [".mp3"])
         self.assertEqual(len(list_dir), self.djv.db.get_num_songs())
-#
+
     def test_fingerprint_1_file_10secs(self):
         self.djv.limit = 10
         self.djv.fingerprint_file("tests/test1.mp3")
@@ -62,8 +62,8 @@ class DejavuPlainDBTestCases(unittest.TestCase):
         self.djv = Dejavu(config_plain)
 
     def tearDown(self):
+        self.djv.db.empty()
         del self.djv
-        self.djv = None
 
     def test_fingerprint_1_file(self):
         self.djv.fingerprint_file("tests/test1.mp3")
@@ -91,4 +91,3 @@ class DejavuPlainDBTestCases(unittest.TestCase):
         self.djv.fingerprint_file("tests/test2.mp3")
         song = self.djv.recognize(FileRecognizer, "tests/test2.mp3")
         self.assertEqual(song["song_name"], "tests/test2.mp3")
-
