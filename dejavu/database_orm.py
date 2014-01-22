@@ -4,7 +4,7 @@ from dejavu.database import Database, grouper
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
-from sqlalchemy.sql.schema import ForeignKey
+from sqlalchemy.sql.schema import ForeignKey, UniqueConstraint
 
 Base = declarative_base()
 
@@ -18,9 +18,12 @@ class Song(Base):
 class Fingerprint(Base):
     __tablename__ = "fingerprints"
     id = Column(Integer, primary_key=True)
-    hash = Column(String(100))
+    hash = Column(String(200), index=True)
     song_id = Column(Integer, ForeignKey('songs.song_id'))
     offset = Column(Integer)
+
+    __table_args__ = (UniqueConstraint('song_id', 'offset', 'hash',
+                                       name='song_id'),)
 
 
 def row2dict(row):
@@ -140,11 +143,16 @@ class ORMDatabase(Database):
         Insert series of hash => song_id, offset
         values into the database.
         """
+        added_hashes = set()
         for hash, offset in hashes:
+            if (hash, offset) in added_hashes:
+                continue
             new_fingerprint = Fingerprint(hash=hash,
                                       song_id=sid,
                                       offset=offset)
             self._DBSession.add(new_fingerprint)
+            added_hashes.add((new_fingerprint.hash, offset))
+
         self._DBSession.commit()
 
     def return_matches(self, hashes):
