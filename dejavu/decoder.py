@@ -43,6 +43,6 @@ def read(filename, limit=None):
 def path_to_songname(path):
     """
     Extracts song name from a filepath. Used to identify which songs
-    have already been fingerprinted on disk. 
+    have already been fingerprinted on disk.
     """
-    return os.path.basename(path).split(".")[0]
+    return os.path.splitext(os.path.basename(path))[0]

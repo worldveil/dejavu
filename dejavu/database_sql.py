@@ -63,8 +63,8 @@ class SQLDatabase(Database):
              `%s` binary(10) not null,
              `%s` mediumint unsigned not null,
              `%s` int unsigned not null,
-         PRIMARY KEY(%s),
-         UNIQUE(%s, %s, %s),
+         INDEX (%s),
+         UNIQUE KEY `unique_constraint` (%s, %s, %s),
          FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE CASCADE
     ) ENGINE=INNODB;""" % (
         FINGERPRINTS_TABLENAME, FIELD_HASH,
