@@ -22,7 +22,9 @@ class Dejavu(object):
         self.limit = self.config.get("fingerprint_limit", None)
         if self.limit == -1: # for JSON compatibility
             self.limit = None
+        self.get_fingerprinted_songs()
 
+    def get_fingerprinted_songs(self):
         # get songs previously indexed
         # TODO: should probably use a checksum of the file instead of filename
         self.songs = self.db.get_songs()
@@ -79,22 +81,29 @@ class Dejavu(object):
                 sid = self.db.insert_song(song_name)
 
                 self.db.insert_hashes(sid, hashes)
-                
                 self.db.set_song_fingerprinted(sid)
+                self.get_fingerprinted_songs()
 
         pool.close()
         pool.join()
 
     def fingerprint_file(self, filepath, song_name=None):
-        song_name, hashes = _fingerprint_worker(filepath,
-                                                self.limit,
-                                                song_name=song_name)
+    	
+    	songname = decoder.path_to_songname(filepath)
+    	song_name = song_name or songname
+    	# don't refingerprint already fingerprinted files
+        if song_name in self.songnames_set:
+            print "%s already fingerprinted, continuing..." % song_name
+       	else:
+            song_name, hashes = _fingerprint_worker(filepath,
+                                                    self.limit,
+                                                    song_name=song_name)
 
-        sid = self.db.insert_song(song_name)
+            sid = self.db.insert_song(song_name)
 
-        self.db.insert_hashes(sid, hashes)
-        
-        self.db.set_song_fingerprinted(sid)
+            self.db.insert_hashes(sid, hashes)
+            self.db.set_song_fingerprinted(sid)
+            self.get_fingerprinted_songs()
 
     def find_matches(self, samples, Fs=fingerprint.DEFAULT_FS):
         hashes = fingerprint.fingerprint(samples, Fs=Fs)
