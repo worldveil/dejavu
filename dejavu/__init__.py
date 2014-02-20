@@ -79,6 +79,8 @@ class Dejavu(object):
                 sid = self.db.insert_song(song_name)
 
                 self.db.insert_hashes(sid, hashes)
+                
+                self.db.set_song_fingerprinted(sid)
 
         pool.close()
         pool.join()
@@ -91,6 +93,8 @@ class Dejavu(object):
         sid = self.db.insert_song(song_name)
 
         self.db.insert_hashes(sid, hashes)
+        
+        self.db.set_song_fingerprinted(sid)
 
     def find_matches(self, samples, Fs=fingerprint.DEFAULT_FS):
         hashes = fingerprint.fingerprint(samples, Fs=Fs)
