@@ -98,7 +98,7 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
     fingerprinted = set()  # to avoid rehashing same pairs
 
     for i in range(len(peaks)):
-        for j in range(fan_value):
+        for j in range(1,fan_value):
             if (i + j) < len(peaks) and not (i, i + j) in fingerprinted:
                 freq1 = peaks[i][IDX_FREQ_I]
                 freq2 = peaks[i + j][IDX_FREQ_I]
