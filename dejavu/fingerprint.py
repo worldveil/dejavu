@@ -18,7 +18,7 @@ DEFAULT_FAN_VALUE = 15
 DEFAULT_AMP_MIN = 10
 PEAK_NEIGHBORHOOD_SIZE = 20
 MIN_HASH_TIME_DELTA = 0
-
+MAX_HASH_TIME_DELTA = 200
 
 def fingerprint(channel_samples, Fs=DEFAULT_FS,
                 wsize=DEFAULT_WINDOW_SIZE,
@@ -108,7 +108,7 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
 
                 t_delta = t2 - t1
 
-                if t_delta >= MIN_HASH_TIME_DELTA:
+                if t_delta >= MIN_HASH_TIME_DELTA and t_delta <= MAX_HASH_TIME_DELTA:
                     h = hashlib.sha1(
                         "%s|%s|%s" % (str(freq1), str(freq2), str(t_delta))
                     )
