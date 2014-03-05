@@ -110,8 +110,7 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
 
                 if t_delta >= MIN_HASH_TIME_DELTA and t_delta <= MAX_HASH_TIME_DELTA:
                     h = hashlib.sha1(
-                        "%s|%s|%s" % (str(freq1), str(freq2), str(t_delta))
-                    )
+                        "%s|%s|%s" % (str(freq1), str(freq2), str(t_delta)))
                     yield (h.hexdigest()[0:20], t1)
 
                 # ensure we don't repeat hashing
