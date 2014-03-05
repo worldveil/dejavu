@@ -72,6 +72,7 @@ if command == 'fingerprint': # Fingerprint all files in a directory
 elif command == 'recognize': # Recognize audio
 
     source = sys.argv[2]
+    song = None
 
     if source in ['mic', 'microphone']:
 

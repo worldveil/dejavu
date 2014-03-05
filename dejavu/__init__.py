@@ -32,7 +32,6 @@ class Dejavu(object):
         for song in self.songs:
             song_name = song[self.db.FIELD_SONGNAME]
             self.songnames_set.add(song_name)
-            print "Added: %s to the set of fingerprinted songs..." % song_name
 
     def fingerprint_directory(self, path, extensions, nprocesses=None):
         # Try to use the maximum amount of processes if not given.
@@ -133,9 +132,6 @@ class Dejavu(object):
                 largest = diff
                 largest_count = diff_counter[diff][sid]
                 song_id = sid
-
-        print("Diff is %d with %d offset-aligned matches" % (largest,
-                                                             largest_count))
 
         # extract idenfication
         song = self.db.get_song_by_id(song_id)

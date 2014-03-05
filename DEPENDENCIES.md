@@ -10,7 +10,7 @@
 
 ## Dependency installation for Mac OS X
 
-Tested on OS X Mavericks. Needs [Homebrew](http://brew.sh) to be installed.
+Tested on OS X Mavericks. An option is to install [Homebrew](http://brew.sh) and do the following:
 
 ```
 brew install portaudio
@@ -27,3 +27,5 @@ sudo pip install MySQL-python
 
 sudo ln -s /usr/local/mysql/lib/libmysqlclient.18.dylib /usr/lib/libmysqlclient.18.dylib
 ```
+
+However installing `portaudio` and/or `ffmpeg` from source is also doable. 
