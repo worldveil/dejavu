@@ -97,8 +97,6 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
     """
     fingerprinted = set()  # to avoid rehashing same pairs
 
-    fingerprinted = set()  # to avoid rehashing same pairs
-
     from operator import itemgetter
     peaks.sort(key=itemgetter(1))
 
