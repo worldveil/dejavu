@@ -100,7 +100,6 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
     from operator import itemgetter
     peaks.sort(key=itemgetter(1))
 
-    _len = 0
     for i in range(len(peaks)):
         for j in range(1, fan_value):
             if (i + j) < len(peaks) and not (i, i + j) in fingerprinted:
@@ -116,8 +115,6 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
                     h = hashlib.sha1(
                         "%s|%s|%s" % (str(freq1), str(freq2), str(t_delta)))
                     yield (h.hexdigest()[0:20], t1)
-                    _len += 1
 
                 # ensure we don't repeat hashing
                 fingerprinted.add((i, i + j))
-    print "hashes: %s", _len
