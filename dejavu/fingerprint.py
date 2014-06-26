@@ -5,6 +5,7 @@ from scipy.ndimage.filters import maximum_filter
 from scipy.ndimage.morphology import (generate_binary_structure,
                                       iterate_structure, binary_erosion)
 import hashlib
+from operator import itemgetter
 
 
 IDX_FREQ_I = 0
@@ -96,8 +97,7 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
     [(e05b341a9b77a51fd26, 32), ... ]
     """
     fingerprinted = set()  # to avoid rehashing same pairs
-
-    from operator import itemgetter
+    
     peaks.sort(key=itemgetter(1))
 
     for i in range(len(peaks)):
