@@ -72,6 +72,11 @@ if options.log == True:
 if options.results_folder != "" and options.results_folder[len(options.results_folder)-1] != '/':
 	options.results_folder += "/"
 
+try:
+    os.stat(options.results_folder)
+except:
+    os.mkdir(options.results_folder)  
+
 def log_msg(msg):
 	if options.log == True:
 		logging.debug(msg)
