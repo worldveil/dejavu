@@ -44,13 +44,16 @@ if args[0][len(args[0])-1] != "/":
 if args[1][len(args[1])-1] != "/":
     args[1] += "/"
 
-print "coisa : ", args[1]
-
 if len(options.test_seconds) == 0:
     options.test_seconds = [1,2,3,4,5,6,7,8,9,10]
 
 if len(options.audio_formats) == 0:
     options.audio_formats = ['wav','mp3']
+    
+try:
+    os.stat(args[1])
+except:
+    os.mkdir(args[1])  
 
 test_files = [ f for f in listdir(args[0]) if isfile(join(args[0],f)) and 
     os.path.splitext(f)[len(os.path.splitext(f))-1][1:] in options.audio_formats ]
