@@ -11,6 +11,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from optparse import OptionParser
+from dejavu.decoder import path_to_songname
+import ast
 
 #####
 ### 	Test files are in specific format:
@@ -21,42 +23,35 @@ DEFAULT_FS = 44100
 DEFAULT_WINDOW_SIZE = 4096
 DEFAULT_OVERLAP_RATIO = 0.5
 
-#FIELD_SONG_ID 				= 'song_id'
 FIELD_SONG_NAME				= 'song_name'
 FIELD_CONFIDENCE			= 'confidence'
 FIELD_QUERY_TIME			= 'match_time'
 FIELD_OFFSET				= 'offset'
 
 # Parse options 
-
 usage = "usage: %prog [options] DEJAVU_PATH TEST_FOLDER"
 parser = OptionParser(usage=usage, version="%prog 1.1")
-
 parser.add_option("--no-log",
 				  action="store_false",
                   dest="log",
                   default=True,
-                  help='Disables logging'
-                  )
+                  help='Disables logging')
 parser.add_option("--log-file",
                   dest="log_file",
                   default="results-compare.log",
                   metavar="LOG_FILE",
-                  help='Set the path and filename of the log file'
-                  )
+                  help='Set the path and filename of the log file')
 parser.add_option("--test-seconds",
 				  action="append",
                   dest="test_seconds",
                   default=[],
                   metavar="Xsec",
-                  help='Appends seconds to test suit'
-                  )
+                  help='Appends seconds to test suit')
 parser.add_option("--results-folder",
 				  action="store",
                   dest="results_folder",
                   metavar="FOLDER",
-                  help='Sets the path where the results are saved'
-                  )
+                  help='Sets the path where the results are saved')
 
 (options, args) = parser.parse_args()
 
@@ -67,11 +62,12 @@ if len(options.test_seconds) == 0:
 	options.test_seconds = ['1sec','2sec','3sec','4sec','5sec','6sec','7sec','8sec','9sec','10sec']
 
 if options.log == True:
-	logging.basicConfig( filename=options.log_file, level=logging.DEBUG )
+	logging.basicConfig(filename=options.log_file, level=logging.DEBUG)
 
-if options.results_folder != "" and options.results_folder[len(options.results_folder)-1] != '/':
+if options.results_folder != "" and options.results_folder[len(options.results_folder) - 1] != '/':
 	options.results_folder += "/"
 
+# ensure results folder exists
 try:
     os.stat(options.results_folder)
 except:
@@ -96,6 +92,11 @@ class DejavuTest (object):
 		# variable match results (yes, no, invalid)
 		self.result_match = [[0 for x in xrange(self.n_columns)] for x in xrange(self.n_lines)] 
 
+		print "columns:", self.n_columns
+		print "length of test files:", len(self.test_files)
+		print "lines:", self.n_lines
+		print "result_match matrix:", self.result_match 
+
 		# variable match precision (if matched in the corrected time)
 		self.result_matching_times = [[0 for x in xrange(self.n_columns)] for x in xrange(self.n_lines)] 
 
@@ -107,38 +108,28 @@ class DejavuTest (object):
 
 		self.begin()
 
-	def get_column_id ( self,secs ):
+	def get_column_id (self, secs):
 		for i, sec in enumerate(self.test_seconds):
 			if secs == sec:
 				return i
 
-	def get_line_id ( self,artist, song ):
-		elem = artist + " - " + song
-
+	def get_line_id (self, song):
 		for i, s in enumerate(self.test_songs):
-			if elem == s:
+			if song == s:
 				return i
-
-		self.test_songs.append(elem)
-		return len(self.test_songs)-1
+		self.test_songs.append(song)
+		return len(self.test_songs) - 1
 
 	def begin(self):
 		for f in self.test_files:
 			log_msg('--------------------------------------------------')
 			log_msg('file: %s' % f)
+
 			# get column 
 			col = self.get_column_id(re.findall("[0-9]*sec",f)[0])
-
-			# get artist and song
-			artist = re.findall("^[^\-]+",f)
-			artist = artist[0].rstrip()
-
-			song = re.findall("\-[^\_]+",f)
-			song = song[0].lstrip("- ")
-
-			line = self.get_line_id ( artist, song)
-
-			result = subprocess.check_output([args[0], 'recognize', 'file', self.test_folder+"/"+f])
+			song = path_to_songname(f).split("_")[0]  # format: XXXX_offset_length.mp3
+			line = self.get_line_id (song)
+			result = subprocess.check_output(["python", args[0] + "/dejavu.py", 'recognize', 'file', self.test_folder+"/"+f])
 			log_msg('RESULT: %s' % result.strip() )
 
 			if result.strip() == "None":
@@ -155,20 +146,14 @@ class DejavuTest (object):
 				result = result.replace("\':", '":')
 				result = result.replace("\',", '",')
 
-				result = json.loads(result)
-
-				artist_result = re.findall("^[^\-]+",result[FIELD_SONG_NAME])
-				artist_result = artist_result[0].rstrip()
-
-				song_result = re.findall("\-[^\_]+",result[FIELD_SONG_NAME])
-				song_result = song_result[0].lstrip("- ")
-
-				log_msg('artist: %s' % artist)
-				log_msg('artist_result: %s' % artist_result)
+				# which song did we predict?
+				result = ast.literal_eval(result)
+				print "result", result
+				song_result = result["song_name"]
 				log_msg('song: %s' % song)
 				log_msg('song_result: %s' % song_result)
 
-				if artist_result != artist or song_result != song:
+				if song_result != song:
 					log_msg('invalid match')
 					self.result_match[line][col] = 'invalid'
 					self.result_matching_times[line][col] = 0
@@ -176,6 +161,7 @@ class DejavuTest (object):
 					self.result_match_confidence[line][col] = 0
 				else:
 					log_msg('correct match')
+					print self.result_match
 					self.result_match[line][col] = 'yes'
 					self.result_query_duration[line][col] = round(result[FIELD_QUERY_TIME],3)
 					self.result_match_confidence[line][col] = result[FIELD_CONFIDENCE]
