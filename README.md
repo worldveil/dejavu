@@ -124,12 +124,18 @@ Or by reading files via scripting functions:
 
 ## Testing (New!)
 
+Testing out different parameterizations of the fingerprinting algorithm is often useful as the curpus becomes larger and larger, and inevitable tradeoffs between speed and accuracy come into play. 
+
+![Confidence](plots/confidence.png)
+
 Test your Dejavu settings on a corpus of audio files on a number of different metrics:
 
 * Confidence of match (number fingerprints aligned)
 * Offset matching accuracy
 * Song matching accuracy
 * Time to match
+
+![Accuracy](plots/matching_graph.png)
 
 An example script is given in `test_dejavu.sh`, shown below:
 
