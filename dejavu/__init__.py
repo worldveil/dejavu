@@ -4,8 +4,14 @@ import fingerprint
 import multiprocessing
 import os
 
-
 class Dejavu(object):
+
+    SONG_ID = "song_id"
+    SONG_NAME = 'song_name'
+    CONFIDENCE = 'confidence'
+    MATCH_TIME = 'match_time'
+    OFFSET = 'offset'
+
     def __init__(self, config):
         super(Dejavu, self).__init__()
 
@@ -136,18 +142,17 @@ class Dejavu(object):
         # extract idenfication
         song = self.db.get_song_by_id(song_id)
         if song:
-            # TODO: Clarifey what `get_song_by_id` should return.
-            songname = song.get("song_name", None)
+            # TODO: Clarify what `get_song_by_id` should return.
+            songname = song.get(Dejavu.SONG_NAME, None)
         else:
             return None
 
         # return match info
         song = {
-            "song_id": song_id,
-            "song_name": songname,
-            "confidence": largest_count,
-            "offset": largest
-        }
+            Dejavu.SONG_ID : song_id,
+            Dejavu.SONG_NAME : songname,
+            Dejavu.CONFIDENCE : largest_count,
+            Dejavu.OFFSET : largest }
 
         return song
 

@@ -9,7 +9,6 @@ from os import listdir
 from os.path import isfile, join
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 from optparse import OptionParser
 from dejavu.decoder import path_to_songname
 import ast
