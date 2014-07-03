@@ -1,0 +1,2 @@
+* Audio in this folder for testing dejavu is taken from here:
+http://freemusicarchive.org/curator/creative_commons/

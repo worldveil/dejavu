@@ -122,6 +122,47 @@ Or by reading files via scripting functions:
 >>> song = djv.recognize(FileRecognizer, "va_us_top_40/wav/07 - Mirrors - Justin Timberlake.wav")
 ```
 
+## Testing (New!)
+
+Test your Dejavu settings on a corpus of audio files on a number of different metrics:
+
+* Confidence of match (number fingerprints aligned)
+* Offset matching accuracy
+* Song matching accuracy
+* Time to match
+
+An example script is given in `test_dejavu.sh`, shown below:
+
+```bash
+#####################################
+### Dejavu example testing script ###
+#####################################
+
+###########
+# Clear out previous results
+rm -rf ./results ./temp_audio
+
+###########
+# Fingerprint files of extension mp3 in the ./mp3 folder
+python dejavu.py fingerprint ./mp3/ mp3
+
+##########
+# Run a test suite on the ./mp3 folder by extracting 1, 2, 3, 4, and 5 
+# second clips sampled randomly from within each song 8 seconds 
+# away from start or end, sampling offset with random seed = 42, and finally, 
+# store results in ./results and log to ./results/dejavu-test.log
+python run_tests.py \
+    --secs 5 \
+    --temp ./temp_audio \
+    --log-file ./results/dejavu-test.log \
+    --padding 8 \
+    --seed 42 \
+    --results ./results \
+    ./mp3
+```
+
+The testing scripts are as of now are a bit rough, and could certainly use some love and attention if you're interested in submitting a PR!
+
 ## How does it work?
 
 The algorithm works off a fingerprint based system, much like:
