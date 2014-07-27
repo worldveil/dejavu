@@ -122,6 +122,8 @@ Or by reading files via scripting functions:
 >>> song = djv.recognize(FileRecognizer, "va_us_top_40/wav/07 - Mirrors - Justin Timberlake.wav")
 ```
 
+Note that the `offset` field of the returned song object tells you about the position in which the song was matched. See [here](https://github.com/worldveil/dejavu/issues/43) for a description of how. 
+
 ## Testing (New!)
 
 Testing out different parameterizations of the fingerprinting algorithm is often useful as the curpus becomes larger and larger, and inevitable tradeoffs between speed and accuracy come into play. 
