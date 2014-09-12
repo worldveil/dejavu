@@ -179,7 +179,7 @@ The algorithm works off a fingerprint based system, much like:
 * [MusicRetrieval](http://www.cs.cmu.edu/~yke/musicretrieval/)
 * [Chromaprint](https://oxygene.sk/2011/01/how-does-chromaprint-work/)
 
-The "fingerprints" are locality sensitve hashes that are computed from the spectrogram of the audio. This is done by taking the FFT of the signal over overlapping windows of the song and identifying peaks. A very robust peak finding algorithm is needed, otherwise you'll have a terrible signal to noise ratio.
+The "fingerprints" are locality sensitive hashes that are computed from the spectrogram of the audio. This is done by taking the FFT of the signal over overlapping windows of the song and identifying peaks. A very robust peak finding algorithm is needed, otherwise you'll have a terrible signal to noise ratio.
 
 Here I've taken the spectrogram over the first few seconds of "Blurred Lines". The spectrogram is a 2D plot and shows amplitude as a function of time (a particular window, actually) and frequency, binned logrithmically, just as the human ear percieves it. In the plot below you can see where local maxima occur in the amplitude space:
 
