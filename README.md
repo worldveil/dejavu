@@ -126,7 +126,7 @@ Note that the `offset` field of the returned song object tells you about the pos
 
 ## Testing (New!)
 
-Testing out different parameterizations of the fingerprinting algorithm is often useful as the curpus becomes larger and larger, and inevitable tradeoffs between speed and accuracy come into play. 
+Testing out different parameterizations of the fingerprinting algorithm is often useful as the corpus becomes larger and larger, and inevitable tradeoffs between speed and accuracy come into play. 
 
 ![Confidence](plots/confidence.png)
 
