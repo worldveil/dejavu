@@ -102,7 +102,27 @@ An example configuration is as follows:
 
 ## Recognizing
 
-There are two ways to recognize audio using Dejavu. You can use Dejavu interactively through the terminal. Assuming you've already instantiated a Dejavu object, you can match audio through your computer's microphone:
+There are two ways to recognize audio using Dejavu. You can recognize by reading and processing files on disk, or through your computer's microphone.
+
+### Recognizing: On Disk
+
+Through the terminal:
+
+```bash
+$ python dejavu.py recognize file sometrack.wav 
+{'song_id': 1, 'song_name': 'Taylor Swift - Shake It Off', 'confidence': 3948, 'offset_seconds': 30.00018, 'match_time': 0.7159781455993652, 'offset': 646L}
+```
+
+or in scripting, assuming you've already instantiated a Dejavu object: 
+
+```python
+>>> from dejavu.recognize import FileRecognizer
+>>> song = djv.recognize(FileRecognizer, "va_us_top_40/wav/Mirrors - Justin Timberlake.wav")
+```
+
+### Recognizing: Through a Microphone
+
+With scripting:
 
 ```python
 >>> from dejavu.recognize import MicrophoneRecognizer
@@ -110,14 +130,11 @@ There are two ways to recognize audio using Dejavu. You can use Dejavu interacti
 {'song_id': 1, 'song_name': 'Taylor Swift - Shake It Off', 'confidence': 3948, 'offset_seconds': 30.00018, 'match_time': 0.7159781455993652, 'offset': 646L}
 ```
 
-Or by reading files via scripting functions:
+and with the command line script, you specify the number of seconds to listen:
 
-```python
->>> from dejavu.recognize import FileRecognizer
->>> song = djv.recognize(FileRecognizer, "va_us_top_40/wav/Mirrors - Justin Timberlake.wav")
+```bash
+$ python dejavu.py recognize mic 10
 ```
-
-Note that the `offset` field of the returned song object tells you about the position in which the song was matched. See [here](https://github.com/worldveil/dejavu/issues/43) for a description of how. 
 
 ## Testing (New!)
 
