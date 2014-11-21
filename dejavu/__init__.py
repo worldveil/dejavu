@@ -11,6 +11,7 @@ class Dejavu(object):
     CONFIDENCE = 'confidence'
     MATCH_TIME = 'match_time'
     OFFSET = 'offset'
+    OFFSET_SECS = 'offset_seconds'
 
     def __init__(self, config):
         super(Dejavu, self).__init__()
@@ -148,11 +149,15 @@ class Dejavu(object):
             return None
 
         # return match info
+        nseconds = round(float(largest) / fingerprint.DEFAULT_FS * \
+                fingerprint.DEFAULT_WINDOW_SIZE * \
+                fingerprint.DEFAULT_OVERLAP_RATIO, 5)
         song = {
             Dejavu.SONG_ID : song_id,
             Dejavu.SONG_NAME : songname,
             Dejavu.CONFIDENCE : largest_count,
-            Dejavu.OFFSET : largest }
+            Dejavu.OFFSET : largest,
+            Dejavu.OFFSET_SECS : nseconds }
 
         return song
 

@@ -107,19 +107,14 @@ There are two ways to recognize audio using Dejavu. You can use Dejavu interacti
 ```python
 >>> from dejavu.recognize import MicrophoneRecognizer
 >>> print djv.recognize(MicrophoneRecognizer, seconds=10) # Defaults to 10 seconds.
-{
-    'song_id': 16,
-    'song_name': 'Love Somebody - Maroon 5', 
-    'confidence': 21,
-    'offset' : 867
-}
+{'song_id': 1, 'song_name': 'Taylor Swift - Shake It Off', 'confidence': 3948, 'offset_seconds': 30.00018, 'match_time': 0.7159781455993652, 'offset': 646L}
 ```
 
 Or by reading files via scripting functions:
 
 ```python
 >>> from dejavu.recognize import FileRecognizer
->>> song = djv.recognize(FileRecognizer, "va_us_top_40/wav/07 - Mirrors - Justin Timberlake.wav")
+>>> song = djv.recognize(FileRecognizer, "va_us_top_40/wav/Mirrors - Justin Timberlake.wav")
 ```
 
 Note that the `offset` field of the returned song object tells you about the position in which the song was matched. See [here](https://github.com/worldveil/dejavu/issues/43) for a description of how. 
@@ -169,7 +164,7 @@ python run_tests.py \
     ./mp3
 ```
 
-The testing scripts are as of now are a bit rough, and could certainly use some love and attention if you're interested in submitting a PR!
+The testing scripts are as of now are a bit rough, and could certainly use some love and attention if you're interested in submitting a PR! For example, underscores in audio filenames currently [breaks](https://github.com/worldveil/dejavu/issues/63) the test scripts. 
 
 ## How does it work?
 
