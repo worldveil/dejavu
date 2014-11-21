@@ -126,8 +126,7 @@ With scripting:
 
 ```python
 >>> from dejavu.recognize import MicrophoneRecognizer
->>> print djv.recognize(MicrophoneRecognizer, seconds=10) # Defaults to 10 seconds.
-{'song_id': 1, 'song_name': 'Taylor Swift - Shake It Off', 'confidence': 3948, 'offset_seconds': 30.00018, 'match_time': 0.7159781455993652, 'offset': 646L}
+>>> song = djv.recognize(MicrophoneRecognizer, seconds=10) # Defaults to 10 seconds.
 ```
 
 and with the command line script, you specify the number of seconds to listen:
