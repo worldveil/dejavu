@@ -100,6 +100,19 @@ An example configuration is as follows:
 >>> djv = Dejavu(config)
 ```
 
+## Tuning
+
+Inside `fingerprint.py`, you may want to adjust following parameters (some values are given below).
+
+    FINGERPRINT_REDUCTION = 30
+    PEAK_SORT = False
+    DEFAULT_OVERLAP_RATIO = 0.4
+    DEFAULT_FAN_VALUE = 10
+    DEFAULT_AMP_MIN = 15
+    PEAK_NEIGHBORHOOD_SIZE = 30
+    
+These parameters are described in the `fingerprint.py` in detail. Read that in-order to understand the impact of changing these values.
+
 ## Recognizing
 
 There are two ways to recognize audio using Dejavu. You can recognize by reading and processing files on disk, or through your computer's microphone.
