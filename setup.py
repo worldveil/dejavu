@@ -15,7 +15,7 @@ def parse_requirements(requirements):
         return reqs
 
 PACKAGE_NAME = "PyDejavu"
-PACKAGE_VERSION = "0.1"
+PACKAGE_VERSION = "0.1.1"
 SUMMARY = 'Dejavu Audio Fingerprinting'
 DESCRIPTION = """Dejavu Audio Fingerprinting"""
 REQUIREMENTS = parse_requirements("requirements.txt")

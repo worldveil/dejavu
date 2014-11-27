@@ -207,10 +207,16 @@ class DejavuTest(object):
             log_msg('file: %s' % f)
 
             # get column 
-            col = self.get_column_id(re.findall("[0-9]*sec",f)[0])
-            song = path_to_songname(f).split("_")[0]  # format: XXXX_offset_length.mp3
-            line = self.get_line_id (song)
-            result = subprocess.check_output(["python", "dejavu.py", 'recognize', 'file', self.test_folder + "/" + f])
+            col = self.get_column_id(re.findall("[0-9]*sec", f)[0])
+            # format: XXXX_offset_length.mp3
+            song = path_to_songname(f).split("_")[0]  
+            line = self.get_line_id(song)
+            result = subprocess.check_output([
+                "python", 
+                "dejavu.py",
+                '-r',
+                'file', 
+                self.test_folder + "/" + f])
 
             if result.strip() == "None":
                 log_msg('No match')

@@ -8,28 +8,28 @@ import shutil
 usage = "usage: %prog [options] TESTING_AUDIOFOLDER"
 parser = OptionParser(usage=usage, version="%prog 1.1")
 parser.add_option("--secs",
-				  action="store",
+                  action="store",
                   dest="secs",
                   default=5,
                   type=int,
                   help='Number of seconds starting from zero to test')
 parser.add_option("--results",
-				  action="store",
+                  action="store",
                   dest="results_folder",
                   default="./dejavu_test_results",
                   help='Sets the path where the results are saved')
 parser.add_option("--temp",
-				  action="store",
+                  action="store",
                   dest="temp_folder",
                   default="./dejavu_temp_testing_files",
                   help='Sets the path where the temp files are saved')
 parser.add_option("--log",
-				  action="store_true",
+                  action="store_true",
                   dest="log",
                   default=True,
                   help='Enables logging')
 parser.add_option("--silent",
-				  action="store_false",
+                  action="store_false",
                   dest="silent",
                   default=False,
                   help='Disables printing')
@@ -38,13 +38,13 @@ parser.add_option("--log-file",
                   default="results-compare.log",
                   help='Set the path and filename of the log file')
 parser.add_option("--padding",
-				  action="store",
+                  action="store",
                   dest="padding",
                   default=10,
                   type=int,
                   help='Number of seconds to pad choice of place to test from')
 parser.add_option("--seed",
-				  action="store",
+                  action="store",
                   dest="seed",
                   default=None,
                   type=int,
@@ -62,27 +62,27 @@ except:
     os.mkdir(options.results_folder)
 
 # set logging 
-if options.log == True:
-	logging.basicConfig(filename=options.log_file, level=logging.DEBUG)
+if options.log:
+    logging.basicConfig(filename=options.log_file, level=logging.DEBUG)
 
 # set test seconds
 test_seconds = ['%dsec' % i for i in range(1, options.secs + 1, 1)]
 
 # generate testing files
 for i in range(1, options.secs + 1, 1):
-	generate_test_files(test_folder, options.temp_folder, 
-		i, padding=options.padding)
+    generate_test_files(test_folder, options.temp_folder, 
+                        i, padding=options.padding)
 
 # scan files
 log_msg("Running Dejavu fingerprinter on files in %s..." % test_folder, 
-	log=options.log, silent=options.silent)
+        log=options.log, silent=options.silent)
 
 tm = time.time()
 djv = DejavuTest(options.temp_folder, test_seconds)
 log_msg("finished obtaining results from dejavu in %s" % (time.time() - tm),
-	log=options.log, silent=options.silent)
+        log=options.log, silent=options.silent)
 
-tests = 1 # djv
+tests = 1  # djv
 n_secs = len(test_seconds) 
 
 # set result variables -> 4d variables
