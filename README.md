@@ -122,7 +122,7 @@ There are two ways to recognize audio using Dejavu. You can recognize by reading
 Through the terminal:
 
 ```bash
-$ python dejavu.py recognize file sometrack.wav 
+$ python dejavu.py --recognize file sometrack.wav 
 {'song_id': 1, 'song_name': 'Taylor Swift - Shake It Off', 'confidence': 3948, 'offset_seconds': 30.00018, 'match_time': 0.7159781455993652, 'offset': 646L}
 ```
 
@@ -145,7 +145,7 @@ With scripting:
 and with the command line script, you specify the number of seconds to listen:
 
 ```bash
-$ python dejavu.py recognize mic 10
+$ python dejavu.py --recognize mic 10
 ```
 
 ## Testing (New!)
@@ -176,7 +176,7 @@ rm -rf ./results ./temp_audio
 
 ###########
 # Fingerprint files of extension mp3 in the ./mp3 folder
-python dejavu.py fingerprint ./mp3/ mp3
+python dejavu.py --fingerprint ./mp3/ mp3
 
 ##########
 # Run a test suite on the ./mp3 folder by extracting 1, 2, 3, 4, and 5 
