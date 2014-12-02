@@ -14,7 +14,7 @@ For installing `ffmpeg` on Mac OS X, I highly recommend [this post](http://junge
 
 ## Fedora 20+
 
-### Dependency installation for Mac OS X
+### Dependency installation on Fedora 20+
 
 Install the dependencies
 
