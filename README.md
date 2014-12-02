@@ -6,19 +6,9 @@ Audio fingerprinting and recognition algorithm implemented in Python, see the ex
 
 Dejavu can memorize audio by listening to it once and fingerprinting it. Then by playing a song and recording microphone input, Dejavu attempts to match the audio against the fingerprints held in the database, returning the song being played. 
 
-## Dependencies:
+## Installation and Dependencies:
 
-I've only tested this on Unix systems.
-
-* [`pyaudio`](http://people.csail.mit.edu/hubert/pyaudio/) for grabbing audio from microphone
-* [`ffmpeg`](https://github.com/FFmpeg/FFmpeg) for converting audio files to .wav format
-* [`pydub`](http://pydub.com/), a Python `ffmpeg` wrapper
-* [`numpy`](http://www.numpy.org/) for taking the FFT of audio signals
-* [`scipy`](http://www.scipy.org/), used in peak finding algorithms
-* [`matplotlib`](http://matplotlib.org/), used for spectrograms and plotting
-* [`MySQLdb`](http://mysql-python.sourceforge.net/MySQLdb.html) for interfacing with MySQL databases
-
-For installing `ffmpeg` on Mac OS X, I highly recommend [this post](http://jungels.net/articles/ffmpeg-howto.html).
+Read [INSTALLATION.md](INSTALLATION.md)
 
 ## Setup
 
@@ -148,7 +138,7 @@ and with the command line script, you specify the number of seconds to listen:
 $ python dejavu.py --recognize mic 10
 ```
 
-## Testing (New!)
+## Testing
 
 Testing out different parameterizations of the fingerprinting algorithm is often useful as the corpus becomes larger and larger, and inevitable tradeoffs between speed and accuracy come into play. 
 

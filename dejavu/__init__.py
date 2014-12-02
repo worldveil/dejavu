@@ -3,6 +3,9 @@ import dejavu.decoder as decoder
 import fingerprint
 import multiprocessing
 import os
+import traceback
+import sys
+
 
 class Dejavu(object):
 
@@ -27,7 +30,7 @@ class Dejavu(object):
         # if we should limit seconds fingerprinted,
         # None|-1 means use entire track
         self.limit = self.config.get("fingerprint_limit", None)
-        if self.limit == -1: # for JSON compatibility
+        if self.limit == -1:  # for JSON compatibility
             self.limit = None
         self.get_fingerprinted_songs()
 
@@ -79,9 +82,7 @@ class Dejavu(object):
                 break
             except:
                 print("Failed fingerprinting")
-
                 # Print traceback because we can't reraise it here
-                import traceback, sys
                 traceback.print_exc(file=sys.stdout)
             else:
                 sid = self.db.insert_song(song_name)
@@ -94,13 +95,12 @@ class Dejavu(object):
         pool.join()
 
     def fingerprint_file(self, filepath, song_name=None):
-    	
-    	songname = decoder.path_to_songname(filepath)
-    	song_name = song_name or songname
-    	# don't refingerprint already fingerprinted files
+        songname = decoder.path_to_songname(filepath)
+        song_name = song_name or songname
+        # don't refingerprint already fingerprinted files
         if song_name in self.songnames_set:
             print "%s already fingerprinted, continuing..." % song_name
-       	else:
+        else:
             song_name, hashes = _fingerprint_worker(filepath,
                                                     self.limit,
                                                     song_name=song_name)
@@ -129,9 +129,9 @@ class Dejavu(object):
         song_id = -1
         for tup in matches:
             sid, diff = tup
-            if not diff in diff_counter:
+            if diff not in diff_counter:
                 diff_counter[diff] = {}
-            if not sid in diff_counter[diff]:
+            if sid not in diff_counter[diff]:
                 diff_counter[diff][sid] = 0
             diff_counter[diff][sid] += 1
 
@@ -149,15 +149,16 @@ class Dejavu(object):
             return None
 
         # return match info
-        nseconds = round(float(largest) / fingerprint.DEFAULT_FS * \
-                fingerprint.DEFAULT_WINDOW_SIZE * \
-                fingerprint.DEFAULT_OVERLAP_RATIO, 5)
+        nseconds = round(float(largest) / fingerprint.DEFAULT_FS *
+                         fingerprint.DEFAULT_WINDOW_SIZE *
+                         fingerprint.DEFAULT_OVERLAP_RATIO, 5)
         song = {
-            Dejavu.SONG_ID : song_id,
-            Dejavu.SONG_NAME : songname,
-            Dejavu.CONFIDENCE : largest_count,
-            Dejavu.OFFSET : largest,
-            Dejavu.OFFSET_SECS : nseconds }
+            Dejavu.SONG_ID: song_id,
+            Dejavu.SONG_NAME: songname,
+            Dejavu.CONFIDENCE: largest_count,
+            Dejavu.OFFSET: largest,
+            Dejavu.OFFSET_SECS: nseconds
+        }
 
         return song
 
