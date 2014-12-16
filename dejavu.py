@@ -1,98 +1,93 @@
 #!/usr/bin/python
 
+import os
 import sys
 import json
 import warnings
+import argparse
 
 from dejavu import Dejavu
 from dejavu.recognize import FileRecognizer
 from dejavu.recognize import MicrophoneRecognizer
-from dejavu.recognize import FileRecognizer
+from argparse import RawTextHelpFormatter
 
 warnings.filterwarnings("ignore")
 
-def init():
-    # load config from a JSON file (or anything outputting a python dictionary)
-    with open("dejavu.cnf") as f:
-        config = json.load(f)
+DEFAULT_CONFIG_FILE = "dejavu.cnf.SAMPLE"
+
+
+def init(configpath):
+    """ 
+    Load config from a JSON file
+    """
+    try:
+        with open(configpath) as f:
+            config = json.load(f)
+    except IOError as err:
+        print("Cannot open configuration: %s. Exiting" % (str(err)))
+        sys.exit(1)
 
     # create a Dejavu instance
     return Dejavu(config)
 
-def showHelp():
-    print ""
-    print "------------------------------------------------"
-    print "DejaVu audio fingerprinting and recognition tool"
-    print "------------------------------------------------"
-    print ""
-    print "Usage: dejavu.py [command] [arguments]"
-    print ""
-    print "Available commands:"
-    print ""
-    print "  Fingerprint a file"
-    print "    dejavu.py fingerprint /path/to/file.extension"
-    print ""
-    print "  Fingerprint all files in a directory"
-    print "    dejavu.py fingerprint /path/to/directory extension"
-    print ""
-    print "  Recognize what is playing through the microphone"
-    print "    dejavu.py recognize mic number_of_seconds"
-    print ""
-    print "  Recognize a file by listening to it"
-    print "    dejavu.py recognize file /path/to/file"
-    print ""
-    print "  Display this help screen"
-    print "    dejavu.py help"
-    print ""
-    exit
 
-if len(sys.argv) > 1:
-    command = sys.argv[1]
-else:
-    showHelp()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description="Dejavu: Audio Fingerprinting library",
+        formatter_class=RawTextHelpFormatter)
+    parser.add_argument('-c', '--config', nargs='?',
+                        help='Path to configuration file\n'
+                             'Usages: \n'
+                             '--config /path/to/config-file\n')
+    parser.add_argument('-f', '--fingerprint', nargs='*',
+                        help='Fingerprint files in a directory\n'
+                             'Usages: \n'
+                             '--fingerprint /path/to/directory extension\n'
+                             '--fingerprint /path/to/directory')
+    parser.add_argument('-r', '--recognize', nargs=2,
+                        help='Recognize what is '
+                             'playing through the microphone\n'
+                             'Usage: \n'
+                             '--recognize mic number_of_seconds \n'
+                             '--recognize file path/to/file \n')
+    args = parser.parse_args()
 
-if command == 'fingerprint': # Fingerprint all files in a directory
+    if not args.fingerprint and not args.recognize:
+        parser.print_help()
+        sys.exit(0)
 
-    djv = init()
-    
+    config_file = args.config
+    if config_file is None:
+        config_file = DEFAULT_CONFIG_FILE
+        # print "Using default config file: %s" % (config_file)
 
-    if len(sys.argv) == 4:
+    djv = init(config_file)
+    if args.fingerprint:
+        # Fingerprint all files in a directory
+        if len(args.fingerprint) == 2:
+            directory = args.fingerprint[0]
+            extension = args.fingerprint[1]
+            print("Fingerprinting all .%s files in the %s directory"
+                  % (extension, directory))
+            djv.fingerprint_directory(directory, ["." + extension], 4)
 
-        directory = sys.argv[2]
-        extension = sys.argv[3]
-        print "Fingerprinting all .%s files in the %s directory" % (extension, directory)
+        elif len(args.fingerprint) == 1:
+            filepath = args.fingerprint[0]
+            if os.path.isdir(filepath):
+                print("Please specify an extension if you'd like to fingerprint a directory!")
+                sys.exit(1)
+            djv.fingerprint_file(filepath)
 
-        djv.fingerprint_directory(directory, ["." + extension], 4)
+    elif args.recognize:
+        # Recognize audio source
+        song = None
+        source = args.recognize[0]
+        opt_arg = args.recognize[1]
 
-    else:
+        if source in ('mic', 'microphone'):
+            song = djv.recognize(MicrophoneRecognizer, seconds=opt_arg)
+        elif source == 'file':
+            song = djv.recognize(FileRecognizer, opt_arg)
+        print(song)
 
-        filepath = sys.argv[2]
-        djv.fingerprint_file(filepath)
-
-elif command == 'recognize': # Recognize audio
-
-    source = sys.argv[2]
-    song = None
-
-    if source in ['mic', 'microphone']:
-
-        seconds = int(sys.argv[3])
-        djv = init()
-        song = djv.recognize(MicrophoneRecognizer, seconds=seconds)
-
-    elif source == 'file':
-
-        djv = init()
-        sourceFile = sys.argv[3]
-        song = djv.recognize(FileRecognizer, sourceFile)
-
-    else:
-
-        showHelp()
-
-    print song
-
-else:
-
-    showHelp()
-
+    sys.exit(0)
