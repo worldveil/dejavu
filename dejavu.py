@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import os
 import sys
 import json
 import warnings
@@ -12,15 +13,15 @@ from argparse import RawTextHelpFormatter
 
 warnings.filterwarnings("ignore")
 
-DEFAULT_CONFIG_FILE = "dejavu.cnf"
+DEFAULT_CONFIG_FILE = "dejavu.cnf.SAMPLE"
 
 
-def init(config_file):
-    """ Load config from a JSON file
-    or anything outputting a python dictionary
+def init(configpath):
+    """ 
+    Load config from a JSON file
     """
     try:
-        with open(config_file) as f:
+        with open(configpath) as f:
             config = json.load(f)
     except IOError as err:
         print("Cannot open configuration: %s. Exiting" % (str(err)))
@@ -31,15 +32,13 @@ def init(config_file):
 
 
 if __name__ == '__main__':
-    """ If running from terminal.
-    """
     parser = argparse.ArgumentParser(
-        description="Audio Fingerprinting library",
+        description="Dejavu: Audio Fingerprinting library",
         formatter_class=RawTextHelpFormatter)
     parser.add_argument('-c', '--config', nargs='?',
                         help='Path to configuration file\n'
                              'Usages: \n'
-                             '--config /path/to/congfile\n')
+                             '--config /path/to/config-file\n')
     parser.add_argument('-f', '--fingerprint', nargs='*',
                         help='Fingerprint files in a directory\n'
                              'Usages: \n'
@@ -54,7 +53,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if not args.fingerprint and not args.recognize:
-        print("No arguments")
+        parser.print_help()
         sys.exit(0)
 
     config_file = args.config
@@ -65,15 +64,18 @@ if __name__ == '__main__':
     djv = init(config_file)
     if args.fingerprint:
         # Fingerprint all files in a directory
-        if 2 == len(args.fingerprint):
+        if len(args.fingerprint) == 2:
             directory = args.fingerprint[0]
             extension = args.fingerprint[1]
             print("Fingerprinting all .%s files in the %s directory"
                   % (extension, directory))
             djv.fingerprint_directory(directory, ["." + extension], 4)
 
-        elif 1 == len(args.fingerprint):
+        elif len(args.fingerprint) == 1:
             filepath = args.fingerprint[0]
+            if os.path.isdir(filepath):
+                print("Please specify an extension if you'd like to fingerprint a directory!")
+                sys.exit(1)
             djv.fingerprint_file(filepath)
 
     elif args.recognize:
