@@ -10,6 +10,14 @@ Dejavu can memorize audio by listening to it once and fingerprinting it. Then by
 
 Read [INSTALLATION.md](INSTALLATION.md)
 
+## Quickstart
+
+```bash
+$ git clone https://github.com/worldveil/dejavu.git ./dejavu
+$ cd dejavu
+$ python example.py
+```
+
 ## Setup
 
 First, install the above dependencies. 

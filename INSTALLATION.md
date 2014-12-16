@@ -1,6 +1,6 @@
-# Installation of dejavu
+# Installation of Dejavu
 
-So far dejavu has only been tested on Unix systems.
+So far Dejavu has only been tested on Unix systems.
 
 * [`pyaudio`](http://people.csail.mit.edu/hubert/pyaudio/) for grabbing audio from microphone
 * [`ffmpeg`](https://github.com/FFmpeg/FFmpeg) for converting audio files to .wav format
@@ -16,18 +16,18 @@ For installing `ffmpeg` on Mac OS X, I highly recommend [this post](http://junge
 
 ### Dependency installation on Fedora 20+
 
-Install the dependencies
+Install the dependencies:
 
     sudo yum install numpy scipy python-matplotlib ffmpeg portaudio-devel
     pip install PyAudio
     pip install pydub
     
-Now setup virtualenv ([howto?](http://www.pythoncentral.io/how-to-install-virtualenv-python/))
+Now setup virtualenv ([howto?](http://www.pythoncentral.io/how-to-install-virtualenv-python/)):
 
     pip install virtualenv
     virtualenv --system-site-packages env_with_system
 
-Install from PyPI
+Install from PyPI:
 
     source env_with_system/bin/activate
     pip install PyDejavu
@@ -36,7 +36,7 @@ Install from PyPI
 You can also install the latest code from GitHub:
 
     source env_with_system/bin/activate
-    pip install https://github.com/tuxdna/dejavu/zipball/master
+    pip install https://github.com/worldveil/dejavu/zipball/master
 
 ## Max OS X
 
