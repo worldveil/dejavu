@@ -156,7 +156,7 @@ class Dejavu(object):
             Dejavu.SONG_ID: song_id,
             Dejavu.SONG_NAME: songname,
             Dejavu.CONFIDENCE: largest_count,
-            Dejavu.OFFSET: largest,
+            Dejavu.OFFSET: int(largest),
             Dejavu.OFFSET_SECS: nseconds
         }
 
@@ -176,14 +176,11 @@ def _fingerprint_worker(filename, limit=None, song_name=None):
         pass
 
     songname, extension = os.path.splitext(os.path.basename(filename))
-
     song_name = song_name or songname
-
     channels, Fs = decoder.read(filename, limit)
-
     result = set()
-
     channel_amount = len(channels)
+
     for channeln, channel in enumerate(channels):
         # TODO: Remove prints or change them into optional logging.
         print("Fingerprinting channel %d/%d for %s" % (channeln + 1,
@@ -192,7 +189,6 @@ def _fingerprint_worker(filename, limit=None, song_name=None):
         hashes = fingerprint.fingerprint(channel, Fs=Fs)
         print("Finished channel %d/%d for %s" % (channeln + 1, channel_amount,
                                                  filename))
-
         result |= set(hashes)
 
     return song_name, result
