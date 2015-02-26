@@ -2,6 +2,7 @@ import os
 import fnmatch
 import numpy as np
 from pydub import AudioSegment
+from pydub.utils import audioop
 import wavio
 
 def find_files(path, extensions):
@@ -26,18 +27,31 @@ def read(filename, limit=None):
 
     returns: (channels, samplerate)
     """
-    audiofile = AudioSegment.from_file(filename)
+    # pydub does not support 24-bit wav files, use wavio when this occurs
+    try:
+        audiofile = AudioSegment.from_file(filename)
 
-    if limit:
-        audiofile = audiofile[:limit * 1000]
+        if limit:
+            audiofile = audiofile[:limit * 1000]
 
-    data = np.fromstring(audiofile._data, np.int16)
+        data = np.fromstring(audiofile._data, np.int16)
 
-    channels = []
-    for chn in xrange(audiofile.channels):
-        channels.append(data[chn::audiofile.channels])
+        channels = []
+        for chn in xrange(audiofile.channels):
+            channels.append(data[chn::audiofile.channels])
 
-    return channels, audiofile.frame_rate
+        fs = audiofile.frame_rate
+    except audioop.error:
+        fs, _, audiofile = wavio.readwav(filename)
+
+        audiofile = audiofile.T
+        audiofile = audiofile.astype(np.int16)
+        
+        channels = []
+        for chn in audiofile:
+            channels.append(chn)
+
+    return channels, fs
 
 
 def path_to_songname(path):
