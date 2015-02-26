@@ -2,7 +2,7 @@ import os
 import fnmatch
 import numpy as np
 from pydub import AudioSegment
-
+import wavio
 
 def find_files(path, extensions):
     # Allow both with ".mp3" and without "mp3" to be used for extensions
