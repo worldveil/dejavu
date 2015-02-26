@@ -44,9 +44,12 @@ def read(filename, limit=None):
     except audioop.error:
         fs, _, audiofile = wavio.readwav(filename)
 
+        if limit:
+            audiofile = audiofile[:limit * 1000]
+
         audiofile = audiofile.T
         audiofile = audiofile.astype(np.int16)
-        
+
         channels = []
         for chn in audiofile:
             channels.append(chn)
