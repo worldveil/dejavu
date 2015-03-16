@@ -158,6 +158,8 @@ def get_database(database_type=None):
     database_type = database_type or "mysql"
     # Lower all the input.
     database_type = database_type.lower()
+    if database_type == 'postgresql':
+        import dejavu.database_postgres
 
     for db_cls in Database.__subclasses__():
         if db_cls.type == database_type:

@@ -22,6 +22,12 @@ Second, you'll need to create a MySQL database where Dejavu can store fingerprin
 	Enter password: **********
 	mysql> CREATE DATABASE IF NOT EXISTS dejavu;
 
+Or, if you would like to use postgres for your database:
+
+	$ psql -U postgres
+	Enter password: **********
+	psql> CREATE DATABASE IF NOT EXISTS dejavu;
+
 Now you're ready to start fingerprinting your audio collection! 
 
 ## Quickstart
@@ -76,12 +82,12 @@ The configuration object to the Dejavu constructor must be a dictionary.
 
 The following keys are mandatory:
 
-* `database`, with a value as a dictionary with keys that the database you are using will accept. For example with MySQL, the keys must can be anything that the [`MySQLdb.connect()`](http://mysql-python.sourceforge.net/MySQLdb.html) function will accept. 
+* `database`, with a value as a dictionary with keys that the database you are using will accept. For example with MySQL, the keys must can be anything that the [`MySQLdb.connect()`](http://mysql-python.sourceforge.net/MySQLdb.html) function will accept. Likewise, if using Postgres, the keys must be anything that the [`psycopg2.connect()`](http://initd.org/psycopg/docs/module.html) function will accept..
 
 The following keys are optional:
 
 * `fingerprint_limit`: allows you to control how many seconds of each audio file to fingerprint. Leaving out this key, or alternatively using `-1` and `None` will cause Dejavu to fingerprint the entire audio file. Default value is `None`.
-* `database_type`: as of now, only `mysql` (the default value) is supported. If you'd like to subclass `Database` and add another, please fork and send a pull request!
+* `database_type`: as of now, only `mysql` (the default value) and `postgresql` are supported. If you'd like to subclass `Database` and add another, please fork and send a pull request!
 
 An example configuration is as follows:
 
