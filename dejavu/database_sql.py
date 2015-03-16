@@ -54,6 +54,7 @@ class SQLDatabase(Database):
     FIELD_HASH = "hash"
     FIELD_SONG_ID = "song_id"
     FIELD_OFFSET = "offset"
+    FIELD_SHA1 = 'file_sha1'
     FIELD_SONGNAME = "song_name"
     FIELD_FINGERPRINTED = "fingerprinted"
 
@@ -78,10 +79,12 @@ class SQLDatabase(Database):
             `%s` mediumint unsigned not null auto_increment,
             `%s` varchar(250) not null,
             `%s` tinyint default 0,
+            `%s` binary(10) not null,
         PRIMARY KEY (`%s`),
         UNIQUE KEY `%s` (`%s`)
     ) ENGINE=INNODB;""" % (
         SONGS_TABLENAME, FIELD_SONG_ID, FIELD_SONGNAME, FIELD_FINGERPRINTED,
+        FIELD_SHA1,
         FIELD_SONG_ID, FIELD_SONG_ID, FIELD_SONG_ID,
     )
 
@@ -91,8 +94,8 @@ class SQLDatabase(Database):
             (UNHEX(%%s), %%s, %%s);
     """ % (FINGERPRINTS_TABLENAME, FIELD_HASH, FIELD_SONG_ID, FIELD_OFFSET)
 
-    INSERT_SONG = "INSERT INTO %s (%s) values (%%s);" % (
-        SONGS_TABLENAME, FIELD_SONGNAME)
+    INSERT_SONG = "INSERT INTO %s (%s, %s) values (%%s, UNHEX(%%s));" % (
+        SONGS_TABLENAME, FIELD_SONGNAME, FIELD_SHA1)
 
     # selects
     SELECT = """
@@ -109,8 +112,8 @@ class SQLDatabase(Database):
     """ % (FIELD_SONG_ID, FIELD_OFFSET, FINGERPRINTS_TABLENAME)
 
     SELECT_SONG = """
-        SELECT %s FROM %s WHERE %s = %%s
-    """ % (FIELD_SONGNAME, SONGS_TABLENAME, FIELD_SONG_ID)
+        SELECT %s, HEX(%s) FROM %s WHERE %s = %%s
+    """ % (FIELD_SONGNAME, FIELD_SHA1, SONGS_TABLENAME, FIELD_SONG_ID)
 
     SELECT_NUM_FINGERPRINTS = """
         SELECT COUNT(*) as n FROM %s
@@ -121,8 +124,9 @@ class SQLDatabase(Database):
     """ % (FIELD_SONG_ID, SONGS_TABLENAME, FIELD_FINGERPRINTED)
 
     SELECT_SONGS = """
-        SELECT %s, %s FROM %s WHERE %s = 1;
-    """ % (FIELD_SONG_ID, FIELD_SONGNAME, SONGS_TABLENAME, FIELD_FINGERPRINTED)
+        SELECT %s, %s, HEX(%s) FROM %s WHERE %s = 1;
+    """ % (FIELD_SONG_ID, FIELD_SONGNAME, FIELD_SHA1,
+           SONGS_TABLENAME, FIELD_FINGERPRINTED)
 
     # drops
     DROP_FINGERPRINTS = "DROP TABLE IF EXISTS %s;" % FINGERPRINTS_TABLENAME
@@ -235,12 +239,12 @@ class SQLDatabase(Database):
         with self.cursor() as cur:
             cur.execute(self.INSERT_FINGERPRINT, (hash, sid, offset))
 
-    def insert_song(self, songname):
+    def insert_song(self, songname, file_hash):
         """
         Inserts song in the database and returns the ID of the inserted record.
         """
         with self.cursor() as cur:
-            cur.execute(self.INSERT_SONG, (songname,))
+            cur.execute(self.INSERT_SONG, (songname, file_hash))
             return cur.lastrowid
 
     def query(self, hash):
