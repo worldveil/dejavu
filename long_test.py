@@ -18,10 +18,10 @@ if __name__ == '__main__':
     djv = Dejavu(config)
 
     # Fingerprint all the mp3's in the directory we give it
-    # short_song = "./iskoTest/Josh-Woodward--I-Want-To-Destroy-Something-Beautiful.mp3"
+    # short_song = "./hugeFilesTests/Josh-Woodward--I-Want-To-Destroy-Something-Beautiful.mp3"
     # djv.fingerprint_with_duration_check(short_song, minutes=3)
 
-    long_song = "./iskoTest/Roger Penrose - Forbidden crystal symmetry in mathematics and architecture.mp3"
-    djv.fingerprint_with_duration_check(long_song, minutes=3)
+    long_song = "./hugeFilesTests/Roger Penrose - Forbidden crystal symmetry in mathematics and architecture.mp3"
+    djv.fingerprint_with_duration_check(long_song, minutes=3, song_name="RogerPenrose1",processes=3)
 
 
