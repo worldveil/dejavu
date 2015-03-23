@@ -21,6 +21,7 @@ Install the dependencies:
     sudo yum install numpy scipy python-matplotlib ffmpeg portaudio-devel
     pip install PyAudio
     pip install pydub
+	pip install audioread  # https://github.com/sampsyo/audioread
     
 Now setup virtualenv ([howto?](http://www.pythoncentral.io/how-to-install-virtualenv-python/)):
 
