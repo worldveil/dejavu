@@ -1,16 +1,18 @@
 import os
 import fnmatch
+import hashlib
 import numpy as np
 from pydub import AudioSegment
 from pydub.utils import audioop
 import wavio
 
 def find_files(path, extensions):
-    # Allow both with ".mp3" and without "mp3" to be used for extensions
-    extensions = [e.replace(".", "") for e in extensions]
-
+    """ Returns all files in a path that match a certain extentsion.
+    For users sake, you can pass in 'mp3' and '.mp3' and get the
+    same results. Note, this is a generator.
+    """
     for dirpath, dirnames, files in os.walk(path):
-        for extension in extensions:
+        for extension in [e.replace(".", "") for e in extensions]:
             for f in fnmatch.filter(files, "*.%s" % extension):
                 p = os.path.join(dirpath, f)
                 yield (p, extension)
@@ -60,7 +62,11 @@ def read(filename, limit=None):
 
 def path_to_songname(path):
     """
-    Extracts song name from a filepath. Used to identify which songs
-    have already been fingerprinted on disk.
+    Extracts an MD5 from a filepath. This is used to identify which
+    songs have already been fingerprinted. Previously, a filepath string
+    was used, but MD5 will guarantee the song is unique (if you change
+    the name of the file using the old method, you were in a world of
+    hurt).
     """
-    return os.path.splitext(os.path.basename(path))[0]
+    path = os.path.splitext(os.path.basename(path))[0]
+    return hashlib.md5(str(path)).digest()

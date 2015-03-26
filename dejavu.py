@@ -74,7 +74,8 @@ if __name__ == '__main__':
         elif len(args.fingerprint) == 1:
             filepath = args.fingerprint[0]
             if os.path.isdir(filepath):
-                print("Please specify an extension if you'd like to fingerprint a directory!")
+                print("Please specify an extension if
+                       you'd like to fingerprint a directory!")
                 sys.exit(1)
             djv.fingerprint_file(filepath)
 
