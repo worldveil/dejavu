@@ -3,7 +3,6 @@
 from itertools import izip_longest
 import Queue
 import sys
-import uuid
 import binascii
 
 try:
@@ -24,6 +23,9 @@ class PostgresDatabase(Database):
     """
 
     type = "postgresql"
+
+    # The number of hashes to insert at a time
+    NUM_HASHES = 10000
 
     # Tables
     FINGERPRINTS_TABLENAME = "fingerprints"
@@ -63,7 +65,7 @@ class PostgresDatabase(Database):
     # Creates the table that stores song information.
     CREATE_SONGS_TABLE = """
         CREATE TABLE IF NOT EXISTS %s (
-            %s uuid NOT NULL,
+            %s uuid DEFAULT uuid_generate_v4() NOT NULL,
             %s varchar(250) NOT NULL,
             %s boolean default FALSE,
             PRIMARY KEY (%s),
@@ -89,8 +91,9 @@ class PostgresDatabase(Database):
 
     # Inserts song information.
     INSERT_SONG = """
-        INSERT INTO %s (%s, %s)
-        values (%%s, %%s);
+        INSERT INTO %s (%s)
+        values (%%s)
+        RETURNING %s;
         """ % (
             SONGS_TABLENAME,
             FIELD_SONGNAME,
@@ -317,16 +320,8 @@ class PostgresDatabase(Database):
         Inserts song in the database and returns the ID of the inserted record.
         """
         with self.cursor() as cur:
-            while True:
-                new_pkey = str(uuid.uuid4())
-                try:
-                    cur.execute(self.INSERT_SONG, (songname, new_pkey))
-                    break
-                except psycopg2.ProgrammingError as err:
-                    # Duplicate uuid, generate new one
-                    print err, "Key already exists, generating new one"
-                    sys.exit(2)
-            return new_pkey
+            cur.execute(self.INSERT_SONG, (songname, ))
+            return cur.fetchone()[0]
 
     def query(self, bhash):
         """
@@ -360,7 +355,7 @@ class PostgresDatabase(Database):
             values.append((bhash, sid, offset))
 
         with self.cursor() as cur:
-            for split_values in grouper(values, 1000):
+            for split_values in grouper(values, self.NUM_HASHES):
                 cur.executemany(self.INSERT_FINGERPRINT, split_values)
 
     def return_matches(self, hashes):
@@ -377,7 +372,7 @@ class PostgresDatabase(Database):
         values = mapper.keys()
 
         with self.cursor() as cur:
-            for split_values in grouper(values, 1000):
+            for split_values in grouper(values, self.NUM_HASHES):
                 # Create our IN part of the query
                 query = self.SELECT_MULTIPLE
                 query = query % ', '.join(["decode(%s, 'hex')"] * \
