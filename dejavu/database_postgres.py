@@ -31,6 +31,9 @@ class PostgresDatabase(Database):
     FINGERPRINTS_TABLENAME = "fingerprints"
     SONGS_TABLENAME = "songs"
 
+    # Schema
+    DEFAULT_SCHEMA = 'public'
+
     # Fields
     FIELD_HASH = 'hash'
     FIELD_SONG_ID = 'song_id'
@@ -56,9 +59,23 @@ class PostgresDatabase(Database):
 
     # Creates an index on fingerprint itself for webscale
     CREATE_FINGERPRINT_INDEX = """
-        CREATE INDEX fingerprint_index
-        ON %s (%s);
-        """ % (FINGERPRINTS_TABLENAME,
+        DO $$
+            BEGIN
+
+            IF NOT EXISTS (
+                SELECT 1
+                FROM   pg_class c
+                JOIN   pg_namespace n ON n.oid = c.relnamespace
+                WHERE  c.relname = 'fingerprint_index'
+                AND    n.nspname = '%s'
+            ) THEN
+
+            CREATE INDEX fingerprint_index ON %s.%s (%s);
+            END IF;
+        END$$;
+        """ % (DEFAULT_SCHEMA,
+               DEFAULT_SCHEMA,
+               FINGERPRINTS_TABLENAME,
                FIELD_HASH
               )
 
@@ -234,11 +251,7 @@ class PostgresDatabase(Database):
         with self.cursor() as cur:
             cur.execute(self.CREATE_SONGS_TABLE)
             cur.execute(self.CREATE_FINGERPRINTS_TABLE)
-            try:
-                cur.execute(self.CREATE_FINGERPRINT_INDEX)
-            except psycopg2.ProgrammingError as err:
-                # Big hack, write function to test if index exists.
-                print err
+            cur.execute(self.CREATE_FINGERPRINT_INDEX)
 
     def empty(self):
         """
