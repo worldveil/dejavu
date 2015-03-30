@@ -1,0 +1,23 @@
+# as described in https://trac.ffmpeg.org/wiki/Concatenate
+# you can create a huge length file by concatenating many small ones:
+# by calling:
+# ffmpeg -f concat -i mp3/concatenation_list.txt -c copy mp3/concatenated.mp3
+# concatenated song will be about 56 minutes long
+#
+file mp3/Brad-Sucks--Total-Breakdown.mp3
+file mp3/Choc--Eigenvalue-Subspace-Decomposition.mp3
+file mp3/Josh-Woodward--I-Want-To-Destroy-Something-Beautiful.mp3
+file mp3/Sean-Fournier--Falling-For-You.mp3
+file mp3/The-Lights-Galaxia--While-She-Sleeps.mp3
+#
+file mp3/Brad-Sucks--Total-Breakdown.mp3
+file mp3/Choc--Eigenvalue-Subspace-Decomposition.mp3
+file mp3/Josh-Woodward--I-Want-To-Destroy-Something-Beautiful.mp3
+file mp3/Sean-Fournier--Falling-For-You.mp3
+file mp3/The-Lights-Galaxia--While-She-Sleeps.mp3
+#
+file mp3/Brad-Sucks--Total-Breakdown.mp3
+file mp3/Choc--Eigenvalue-Subspace-Decomposition.mp3
+file mp3/Josh-Woodward--I-Want-To-Destroy-Something-Beautiful.mp3
+file mp3/Sean-Fournier--Falling-For-You.mp3
+file mp3/The-Lights-Galaxia--While-She-Sleeps.mp3
