@@ -6,6 +6,7 @@ import os
 import traceback
 import sys
 
+import shutil
 import subprocess
 import os.path
 from dejavu.decoder import get_duration
@@ -169,7 +170,6 @@ class Dejavu(object):
                                     '-ss', str(start_offset),
                                     '-t', str(split_length),
                                     output_file]
-            #songname for the input
             retcode = subprocess.call(convertion_command, stderr=open(os.devnull))
             if retcode != 0:
                 raise SplitError(input_file, output_file, retcode)
@@ -177,15 +177,10 @@ class Dejavu(object):
             end_offset += split_length
             end_offset = min(end_offset, duration)
 
-            # song_name = song_name or songname
-            # song_name, hashes = _fingerprint_worker(output_file,
-            #                                         self.limit,
-            #                                         song_name=song_name)
-            # self.db.insert_hashes(sid, hashes)
         self.db.set_song_fingerprinted(sid)
         self.get_fingerprinted_songs()
         self.fingerprint_directory(output_path, [extension], nprocesses=processes, splited=True, splited_song_name=song_name)
-        #TODO: delete files in the output_split_path after FP
+        shutil.rmtree(output_path)
 
     def find_matches(self, samples, Fs=fingerprint.DEFAULT_FS):
         hashes = fingerprint.fingerprint(samples, Fs=Fs)
