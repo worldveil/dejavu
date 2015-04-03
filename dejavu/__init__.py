@@ -6,6 +6,24 @@ import os
 import traceback
 import sys
 
+import shutil
+import subprocess
+import os.path
+from dejavu.decoder import get_duration
+
+def assure_path_exists(path):
+    if not os.path.isdir(path):
+        os.makedirs(path)
+
+class SplitError(Exception):
+    def __init__(self, file_path, output_file, error_code):
+        Exception.__init__(self)
+        self.file_path = file_path
+        self.error_code = error_code
+        self.output_file = output_file
+
+    def __str__(self):
+        return "Spliting of file({0}) failed to ({1}). ffmpeg returned error code: {2}".format(self.file_path, self.output_file, self.error_code)
 
 class Dejavu(object):
 
@@ -15,6 +33,11 @@ class Dejavu(object):
     MATCH_TIME = 'match_time'
     OFFSET = 'offset'
     OFFSET_SECS = 'offset_seconds'
+
+    SPLIT_DIR = "split_dir"
+    SLICE_LIMIT_WHEN_SPLITTING = 3 # in minutes
+    LIMIT_CPU_CORES_FOR_SPLITS = 3
+    OVERWRITE_TEMP_FILES_WHEN_SPLITING = 1
 
     def __init__(self, config):
         super(Dejavu, self).__init__()
@@ -43,7 +66,7 @@ class Dejavu(object):
             song_name = song[self.db.FIELD_SONGNAME]
             self.songnames_set.add(song_name)
 
-    def fingerprint_directory(self, path, extensions, nprocesses=None):
+    def fingerprint_directory(self, path, extensions, nprocesses=None, treat_as_split=False, song_name_for_the_split=""):
         # Try to use the maximum amount of processes if not given.
         try:
             nprocesses = nprocesses or multiprocessing.cpu_count()
@@ -71,6 +94,8 @@ class Dejavu(object):
         # Send off our tasks
         iterator = pool.imap_unordered(_fingerprint_worker,
                                        worker_input)
+        if treat_as_split and song_name_for_the_split:
+            sid = self.db.insert_song(song_name_for_the_split)
 
         # Loop till we have all of them
         while True:
@@ -85,8 +110,8 @@ class Dejavu(object):
                 # Print traceback because we can't reraise it here
                 traceback.print_exc(file=sys.stdout)
             else:
-                sid = self.db.insert_song(song_name)
-
+                if not treat_as_split:
+                    sid = self.db.insert_song(song_name)
                 self.db.insert_hashes(sid, hashes)
                 self.db.set_song_fingerprinted(sid)
                 self.get_fingerprinted_songs()
@@ -110,6 +135,48 @@ class Dejavu(object):
             self.db.insert_hashes(sid, hashes)
             self.db.set_song_fingerprinted(sid)
             self.get_fingerprinted_songs()
+
+    def fingerprint_with_duration_check(self, input_file, song_name=None):
+        duration = get_duration(input_file)
+        split_length =  self.SLICE_LIMIT_WHEN_SPLITTING * 60
+        if duration < split_length:
+            return self.fingerprint_file(input_file)
+        songname, extension = os.path.splitext(os.path.basename(input_file))
+        song_name = song_name or songname
+        # don't refingerprint already fingerprinted files
+        if song_name in self.songnames_set:
+            print "%s already fingerprinted, continuing..." % song_name
+            return
+        file_directory = os.path.dirname(input_file)
+        output_path = os.path.join(file_directory, self.SPLIT_DIR, song_name)
+        assure_path_exists(output_path)
+        start_offset = 0
+        end_offset = split_length
+        retcode = 0
+        sid = self.db.insert_song(song_name)
+        while start_offset < duration:
+            output_file = os.path.join(output_path, "start_sec{0}_end_sec{1}{2}".format(start_offset, end_offset, extension))
+            convertion_command = [ 'ffmpeg',
+                                    '-i', input_file,
+                                    "-acodec", "copy", #fastest convertion possible 1:1 copy
+                                    ["-n","-y"][self.OVERWRITE_TEMP_FILES_WHEN_SPLITING],  # always overwrite existing files
+                                    "-vn",  # Drop any video streams if there are any
+                                    '-ss', str(start_offset),
+                                    '-t', str(split_length),
+                                    output_file]
+            retcode = subprocess.call(convertion_command, stderr=open(os.devnull))
+            if retcode != 0:
+                raise SplitError(input_file, output_file, retcode)
+            start_offset += split_length
+            end_offset += split_length
+            end_offset = min(end_offset, duration)
+
+        self.db.set_song_fingerprinted(sid)
+        self.get_fingerprinted_songs()
+        self.fingerprint_directory(output_path, [extension],
+            nprocesses=self.LIMIT_CPU_CORES_FOR_SPLITS,
+            treat_as_split=True, song_name_for_the_split=song_name)
+        shutil.rmtree(output_path)
 
     def find_matches(self, samples, Fs=fingerprint.DEFAULT_FS):
         hashes = fingerprint.fingerprint(samples, Fs=Fs)

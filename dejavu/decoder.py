@@ -5,6 +5,19 @@ from pydub import AudioSegment
 from pydub.utils import audioop
 import wavio
 
+# pip install audioread
+# https://github.com/sampsyo/audioread
+import audioread
+
+def get_duration(file_path):
+    duration = 0
+    with audioread.audio_open(file_path) as f:
+        duration = f.duration
+        f.close()
+    return duration
+
+
+
 def find_files(path, extensions):
     # Allow both with ".mp3" and without "mp3" to be used for extensions
     extensions = [e.replace(".", "") for e in extensions]
