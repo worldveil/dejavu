@@ -34,7 +34,7 @@ class Dejavu(object):
     OFFSET_SECS = 'offset_seconds'
 
     SPLIT_DIR = "split_dir"
-    OVERWRITE_WHEN_SPLITING = 1
+    OVERWRITE_TEMP_FILES_WHEN_SPLITING = 1
 
     def __init__(self, config):
         super(Dejavu, self).__init__()
@@ -165,7 +165,7 @@ class Dejavu(object):
             convertion_command = [ 'ffmpeg',
                                     '-i', input_file,
                                     "-acodec", "copy", #fastest convertion possible 1:1 copy
-                                    ["-n","-y"][self.OVERWRITE_WHEN_SPLITING],  # always overwrite existing files
+                                    ["-n","-y"][self.OVERWRITE_TEMP_FILES_WHEN_SPLITING],  # always overwrite existing files
                                     "-vn",  # Drop any video streams if there are any
                                     '-ss', str(start_offset),
                                     '-t', str(split_length),
