@@ -35,6 +35,7 @@ class Dejavu(object):
     OFFSET_SECS = 'offset_seconds'
 
     SPLIT_DIR = "split_dir"
+    SLICE_LIMIT_WHEN_SPLITTING = 3 # in minutes
     OVERWRITE_TEMP_FILES_WHEN_SPLITING = 1
 
     def __init__(self, config):
@@ -134,9 +135,9 @@ class Dejavu(object):
             self.db.set_song_fingerprinted(sid)
             self.get_fingerprinted_songs()
 
-    def fingerprint_with_duration_check(self, input_file, minutes=5, song_name=None, processes=None):
+    def fingerprint_with_duration_check(self, input_file, song_name=None, processes=None):
         duration = get_duration(input_file)
-        split_length =  minutes * 60
+        split_length =  self.SLICE_LIMIT_WHEN_SPLITTING * 60
         if duration < split_length:
             return self.fingerprint_file(input_file)
         songname, extension = os.path.splitext(os.path.basename(input_file))
