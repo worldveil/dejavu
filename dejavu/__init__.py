@@ -11,6 +11,10 @@ import subprocess
 import os.path
 from dejavu.decoder import get_duration
 
+def assure_path_exists(path):
+    if not os.path.isdir(path):
+        os.makedirs(path)
+
 class SplitError(Exception):
     def __init__(self, file_path, output_file, error_code):
         Exception.__init__(self)
@@ -20,9 +24,6 @@ class SplitError(Exception):
 
     def __str__(self):
         return "Spliting of file({0}) failed to ({1}). ffmpeg returned error code: {2}".format(self.file_path, self.output_file, self.error_code)
-
-
-
 
 class Dejavu(object):
 
@@ -145,17 +146,8 @@ class Dejavu(object):
             print "%s already fingerprinted, continuing..." % song_name
             return
         file_directory = os.path.dirname(input_file)
-        output_split_path = os.path.join(file_directory, self.SPLIT_DIR)
-        try:
-            os.mkdir(output_split_path)
-        except WindowsError:
-            pass
-        output_path = os.path.join(output_split_path, song_name)
-        try:
-            os.mkdir(output_path)
-        except WindowsError:
-            pass
-
+        output_path = os.path.join(file_directory, self.SPLIT_DIR, song_name)
+        assure_path_exists(output_path)
         start_offset = 0
         end_offset = split_length
         retcode = 0
