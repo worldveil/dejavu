@@ -43,6 +43,6 @@ if __name__ == '__main__':
     else:
         raise "This file was successfully ingerprinted and splitting was not needed"
 
-    djv.fingerprint_with_duration_check(long_song, song_name="Concatenates12345",processes=3)
+    djv.fingerprint_with_duration_check(long_song, song_name="Concatenates12345")
 
 

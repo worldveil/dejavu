@@ -36,6 +36,7 @@ class Dejavu(object):
 
     SPLIT_DIR = "split_dir"
     SLICE_LIMIT_WHEN_SPLITTING = 3 # in minutes
+    LIMIT_CPU_CORES_FOR_SPLITS = 3
     OVERWRITE_TEMP_FILES_WHEN_SPLITING = 1
 
     def __init__(self, config):
@@ -135,7 +136,7 @@ class Dejavu(object):
             self.db.set_song_fingerprinted(sid)
             self.get_fingerprinted_songs()
 
-    def fingerprint_with_duration_check(self, input_file, song_name=None, processes=None):
+    def fingerprint_with_duration_check(self, input_file, song_name=None):
         duration = get_duration(input_file)
         split_length =  self.SLICE_LIMIT_WHEN_SPLITTING * 60
         if duration < split_length:
@@ -172,7 +173,9 @@ class Dejavu(object):
 
         self.db.set_song_fingerprinted(sid)
         self.get_fingerprinted_songs()
-        self.fingerprint_directory(output_path, [extension], nprocesses=processes, treat_as_split=True, song_name_for_the_split=song_name)
+        self.fingerprint_directory(output_path, [extension],
+            nprocesses=self.LIMIT_CPU_CORES_FOR_SPLITS,
+            treat_as_split=True, song_name_for_the_split=song_name)
         shutil.rmtree(output_path)
 
     def find_matches(self, samples, Fs=fingerprint.DEFAULT_FS):
