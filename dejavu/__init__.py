@@ -63,7 +63,7 @@ class Dejavu(object):
             song_name = song[self.db.FIELD_SONGNAME]
             self.songnames_set.add(song_name)
 
-    def fingerprint_directory(self, path, extensions, nprocesses=None, treat_as_split=False, single_song_name=""):
+    def fingerprint_directory(self, path, extensions, nprocesses=None, treat_as_split=False, song_name_for_the_split=""):
         # Try to use the maximum amount of processes if not given.
         try:
             nprocesses = nprocesses or multiprocessing.cpu_count()
@@ -91,8 +91,8 @@ class Dejavu(object):
         # Send off our tasks
         iterator = pool.imap_unordered(_fingerprint_worker,
                                        worker_input)
-        if treat_as_split and single_song_name:
-            sid = self.db.insert_song(single_song_name)
+        if treat_as_split and song_name_for_the_split:
+            sid = self.db.insert_song(song_name_for_the_split)
 
         # Loop till we have all of them
         while True:
@@ -179,7 +179,7 @@ class Dejavu(object):
 
         self.db.set_song_fingerprinted(sid)
         self.get_fingerprinted_songs()
-        self.fingerprint_directory(output_path, [extension], nprocesses=processes, treat_as_split=True, single_song_name=song_name)
+        self.fingerprint_directory(output_path, [extension], nprocesses=processes, treat_as_split=True, song_name_for_the_split=song_name)
         shutil.rmtree(output_path)
 
     def find_matches(self, samples, Fs=fingerprint.DEFAULT_FS):
