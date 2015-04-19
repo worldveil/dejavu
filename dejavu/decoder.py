@@ -4,6 +4,24 @@ import numpy as np
 from pydub import AudioSegment
 from pydub.utils import audioop
 import wavio
+from hashlib import sha1
+
+def unique_hash(filepath, blocksize=2**20):
+    """ Small function to generate a hash to uniquely generate
+    a file. Inspired by MD5 version here:
+    http://stackoverflow.com/a/1131255/712997
+
+    Works with large files. 
+    """
+    s = sha1()
+    with open(filepath , "rb") as f:
+        while True:
+            buf = f.read(blocksize)
+            if not buf:
+                break
+            s.update(buf)
+    return s.hexdigest().upper()
+
 
 def find_files(path, extensions):
     # Allow both with ".mp3" and without "mp3" to be used for extensions
@@ -55,7 +73,7 @@ def read(filename, limit=None):
         for chn in audiofile:
             channels.append(chn)
 
-    return channels, fs
+    return channels, audiofile.frame_rate, unique_hash(filename)
 
 
 def path_to_songname(path):
