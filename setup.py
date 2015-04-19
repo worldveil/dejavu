@@ -15,7 +15,7 @@ def parse_requirements(requirements):
         return reqs
 
 PACKAGE_NAME = "PyDejavu"
-PACKAGE_VERSION = "0.1.2"
+PACKAGE_VERSION = "0.1.3"
 SUMMARY = 'Dejavu: Audio Fingerprinting in Python'
 DESCRIPTION = """
 Audio fingerprinting and recognition algorithm implemented in Python
@@ -40,8 +40,8 @@ setup(
     long_description=DESCRIPTION,
     author='Will Drevo',
     author_email='will.drevo@gmail.com',
-    maintainer="Saleem Ansari",
-    maintainer_email="tuxdna@gmail.com",
+    maintainer="Will Drevo",
+    maintainer_email="will.drevo@gmail.com",
     url='http://github.com/tuxdna/dejavu',
     license='MIT License',
     include_package_data=True,
