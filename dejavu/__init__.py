@@ -1,4 +1,4 @@
-from dejavu.database import get_database
+from dejavu.database import get_database, Database
 import dejavu.decoder as decoder
 import fingerprint
 import multiprocessing
@@ -39,7 +39,7 @@ class Dejavu(object):
         self.songs = self.db.get_songs()
         self.songhashes_set = set()  # to know which ones we've computed before
         for song in self.songs:
-            song_hash = song[self.db.FIELD_SHA1]
+            song_hash = song[Database.FIELD_FILE_SHA1]
             self.songhashes_set.add(song_hash)
 
     def fingerprint_directory(self, path, extensions, nprocesses=None):
@@ -154,13 +154,12 @@ class Dejavu(object):
                          fingerprint.DEFAULT_WINDOW_SIZE *
                          fingerprint.DEFAULT_OVERLAP_RATIO, 5)
         song = {
-            Dejavu.SONG_ID: song_id,
-            Dejavu.SONG_NAME: songname,
-            Dejavu.CONFIDENCE: largest_count,
-            Dejavu.OFFSET: int(largest),
-            Dejavu.OFFSET_SECS: nseconds
-        }
-
+            Dejavu.SONG_ID : song_id,
+            Dejavu.SONG_NAME : songname,
+            Dejavu.CONFIDENCE : largest_count,
+            Dejavu.OFFSET : int(largest),
+            Dejavu.OFFSET_SECS : nseconds,
+            Database.FIELD_FILE_SHA1 : song.get(Database.FIELD_FILE_SHA1, None),}
         return song
 
     def recognize(self, recognizer, *options, **kwoptions):

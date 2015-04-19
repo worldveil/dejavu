@@ -51,11 +51,6 @@ class SQLDatabase(Database):
     SONGS_TABLENAME = "songs"
 
     # fields
-    FIELD_HASH = "hash"
-    FIELD_SONG_ID = "song_id"
-    FIELD_OFFSET = "offset"
-    FIELD_SHA1 = 'file_sha1'
-    FIELD_SONGNAME = "song_name"
     FIELD_FINGERPRINTED = "fingerprinted"
 
     # creates
@@ -68,10 +63,10 @@ class SQLDatabase(Database):
          UNIQUE KEY `unique_constraint` (%s, %s, %s),
          FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE CASCADE
     ) ENGINE=INNODB;""" % (
-        FINGERPRINTS_TABLENAME, FIELD_HASH,
-        FIELD_SONG_ID, FIELD_OFFSET, FIELD_HASH,
-        FIELD_SONG_ID, FIELD_OFFSET, FIELD_HASH,
-        FIELD_SONG_ID, SONGS_TABLENAME, FIELD_SONG_ID
+        FINGERPRINTS_TABLENAME, Database.FIELD_HASH,
+        Database.FIELD_SONG_ID, Database.FIELD_OFFSET, Database.FIELD_HASH,
+        Database.FIELD_SONG_ID, Database.FIELD_OFFSET, Database.FIELD_HASH,
+        Database.FIELD_SONG_ID, SONGS_TABLENAME, Database.FIELD_SONG_ID
     )
 
     CREATE_SONGS_TABLE = """
@@ -79,41 +74,41 @@ class SQLDatabase(Database):
             `%s` mediumint unsigned not null auto_increment,
             `%s` varchar(250) not null,
             `%s` tinyint default 0,
-            `%s` binary(10) not null,
+            `%s` binary(20) not null,
         PRIMARY KEY (`%s`),
         UNIQUE KEY `%s` (`%s`)
     ) ENGINE=INNODB;""" % (
-        SONGS_TABLENAME, FIELD_SONG_ID, FIELD_SONGNAME, FIELD_FINGERPRINTED,
-        FIELD_SHA1,
-        FIELD_SONG_ID, FIELD_SONG_ID, FIELD_SONG_ID,
+        SONGS_TABLENAME, Database.FIELD_SONG_ID, Database.FIELD_SONGNAME, FIELD_FINGERPRINTED,
+        Database.FIELD_FILE_SHA1,
+        Database.FIELD_SONG_ID, Database.FIELD_SONG_ID, Database.FIELD_SONG_ID,
     )
 
     # inserts (ignores duplicates)
     INSERT_FINGERPRINT = """
         INSERT IGNORE INTO %s (%s, %s, %s) values
             (UNHEX(%%s), %%s, %%s);
-    """ % (FINGERPRINTS_TABLENAME, FIELD_HASH, FIELD_SONG_ID, FIELD_OFFSET)
+    """ % (FINGERPRINTS_TABLENAME, Database.FIELD_HASH, Database.FIELD_SONG_ID, Database.FIELD_OFFSET)
 
     INSERT_SONG = "INSERT INTO %s (%s, %s) values (%%s, UNHEX(%%s));" % (
-        SONGS_TABLENAME, FIELD_SONGNAME, FIELD_SHA1)
+        SONGS_TABLENAME, Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1)
 
     # selects
     SELECT = """
         SELECT %s, %s FROM %s WHERE %s = UNHEX(%%s);
-    """ % (FIELD_SONG_ID, FIELD_OFFSET, FINGERPRINTS_TABLENAME, FIELD_HASH)
+    """ % (Database.FIELD_SONG_ID, Database.FIELD_OFFSET, FINGERPRINTS_TABLENAME, Database.FIELD_HASH)
 
     SELECT_MULTIPLE = """
         SELECT HEX(%s), %s, %s FROM %s WHERE %s IN (%%s);
-    """ % (FIELD_HASH, FIELD_SONG_ID, FIELD_OFFSET,
-           FINGERPRINTS_TABLENAME, FIELD_HASH)
+    """ % (Database.FIELD_HASH, Database.FIELD_SONG_ID, Database.FIELD_OFFSET,
+           FINGERPRINTS_TABLENAME, Database.FIELD_HASH)
 
     SELECT_ALL = """
         SELECT %s, %s FROM %s;
-    """ % (FIELD_SONG_ID, FIELD_OFFSET, FINGERPRINTS_TABLENAME)
+    """ % (Database.FIELD_SONG_ID, Database.FIELD_OFFSET, FINGERPRINTS_TABLENAME)
 
     SELECT_SONG = """
-        SELECT %s, HEX(%s) FROM %s WHERE %s = %%s
-    """ % (FIELD_SONGNAME, FIELD_SHA1, SONGS_TABLENAME, FIELD_SONG_ID)
+        SELECT %s, HEX(%s) as %s FROM %s WHERE %s = %%s;
+    """ % (Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1, Database.FIELD_FILE_SHA1, SONGS_TABLENAME, Database.FIELD_SONG_ID)
 
     SELECT_NUM_FINGERPRINTS = """
         SELECT COUNT(*) as n FROM %s
@@ -121,11 +116,11 @@ class SQLDatabase(Database):
 
     SELECT_UNIQUE_SONG_IDS = """
         SELECT COUNT(DISTINCT %s) as n FROM %s WHERE %s = 1;
-    """ % (FIELD_SONG_ID, SONGS_TABLENAME, FIELD_FINGERPRINTED)
+    """ % (Database.FIELD_SONG_ID, SONGS_TABLENAME, FIELD_FINGERPRINTED)
 
     SELECT_SONGS = """
-        SELECT %s, %s, HEX(%s) FROM %s WHERE %s = 1;
-    """ % (FIELD_SONG_ID, FIELD_SONGNAME, FIELD_SHA1,
+        SELECT %s, %s, HEX(%s) as %s FROM %s WHERE %s = 1;
+    """ % (Database.FIELD_SONG_ID, Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1, Database.FIELD_FILE_SHA1,
            SONGS_TABLENAME, FIELD_FINGERPRINTED)
 
     # drops
@@ -135,7 +130,7 @@ class SQLDatabase(Database):
     # update
     UPDATE_SONG_FINGERPRINTED = """
         UPDATE %s SET %s = 1 WHERE %s = %%s
-    """ % (SONGS_TABLENAME, FIELD_FINGERPRINTED, FIELD_SONG_ID)
+    """ % (SONGS_TABLENAME, FIELD_FINGERPRINTED, Database.FIELD_SONG_ID)
 
     # delete
     DELETE_UNFINGERPRINTED = """
