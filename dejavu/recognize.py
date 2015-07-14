@@ -1,8 +1,10 @@
-import dejavu.fingerprint as fingerprint
-import dejavu.decoder as decoder
+import time
+
 import numpy as np
 import pyaudio
-import time
+
+from . import fingerprint
+from . import decoder
 
 
 class BaseRecognizer(object):

@@ -1,17 +1,24 @@
 import os
 import fnmatch
+from hashlib import sha1
+
 import numpy as np
 from pydub import AudioSegment
 from pydub.utils import audioop
-import wavio
-from hashlib import sha1
+
+from . import wavio
+
+try:
+    range = xrange
+except NameError:
+    pass
 
 def unique_hash(filepath, blocksize=2**20):
     """ Small function to generate a hash to uniquely generate
     a file. Inspired by MD5 version here:
     http://stackoverflow.com/a/1131255/712997
 
-    Works with large files. 
+    Works with large files.
     """
     s = sha1()
     with open(filepath , "rb") as f:
@@ -56,7 +63,7 @@ def read(filename, limit=None):
         data = np.fromstring(audiofile._data, np.int16)
 
         channels = []
-        for chn in xrange(audiofile.channels):
+        for chn in range(audiofile.channels):
             channels.append(data[chn::audiofile.channels])
 
         fs = audiofile.frame_rate

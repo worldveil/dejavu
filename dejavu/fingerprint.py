@@ -1,11 +1,13 @@
+from __future__ import absolute_import, print_function
+import hashlib
+from operator import itemgetter
+
 import numpy as np
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 from scipy.ndimage.filters import maximum_filter
 from scipy.ndimage.morphology import (generate_binary_structure,
                                       iterate_structure, binary_erosion)
-import hashlib
-from operator import itemgetter
 
 IDX_FREQ_I = 0
 IDX_TIME_J = 1
@@ -127,7 +129,7 @@ def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
         plt.gca().invert_yaxis()
         plt.show()
 
-    return zip(frequency_idx, time_idx)
+    return list(zip(frequency_idx, time_idx))
 
 
 def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
@@ -142,7 +144,7 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
     for i in range(len(peaks)):
         for j in range(1, fan_value):
             if (i + j) < len(peaks):
-                
+
                 freq1 = peaks[i][IDX_FREQ_I]
                 freq2 = peaks[i + j][IDX_FREQ_I]
                 t1 = peaks[i][IDX_TIME_J]
@@ -151,5 +153,5 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
 
                 if t_delta >= MIN_HASH_TIME_DELTA and t_delta <= MAX_HASH_TIME_DELTA:
                     h = hashlib.sha1(
-                        "%s|%s|%s" % (str(freq1), str(freq2), str(t_delta)))
+                        "|".join((str(freq1), str(freq2), str(t_delta))).encode('utf-8'))
                     yield (h.hexdigest()[0:FINGERPRINT_REDUCTION], t1)
