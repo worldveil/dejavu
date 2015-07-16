@@ -1,7 +1,9 @@
 from __future__ import absolute_import, print_function, division
 import traceback
 import fnmatch
-import os, re, ast
+import os
+import re
+import json
 import subprocess
 import random
 import logging
@@ -11,6 +13,11 @@ from pydub import AudioSegment
 from . import Dejavu
 from .decoder import path_to_songname
 from .fingerprint import *
+
+try:
+    range = xrange
+except NameError:
+    pass
 
 def set_seed(seed=None):
     """
@@ -139,18 +146,18 @@ class DejavuTest(object):
         print("lines:", self.n_lines)
 
         # variable match results (yes, no, invalid)
-        self.result_match = [[0 for x in xrange(self.n_columns)] for x in xrange(self.n_lines)]
+        self.result_match = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)]
 
         print("result_match matrix:", self.result_match)
 
         # variable match precision (if matched in the corrected time)
-        self.result_matching_times = [[0 for x in xrange(self.n_columns)] for x in xrange(self.n_lines)]
+        self.result_matching_times = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)]
 
         # variable mahing time (query time)
-        self.result_query_duration = [[0 for x in xrange(self.n_columns)] for x in xrange(self.n_lines)]
+        self.result_query_duration = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)]
 
         # variable confidence
-        self.result_match_confidence = [[0 for x in xrange(self.n_columns)] for x in xrange(self.n_lines)]
+        self.result_match_confidence = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)]
 
         self.begin()
 
@@ -218,9 +225,10 @@ class DejavuTest(object):
                 "dejavu.py",
                 '-r',
                 'file',
-                self.test_folder + "/" + f])
+                self.test_folder + "/" + f],
+                universal_newlines=True)
 
-            if result.strip() == "None":
+            if result.strip() == "null":
                 log_msg('No match')
                 self.result_match[line][col] = 'no'
                 self.result_matching_times[line][col] = 0
@@ -228,14 +236,8 @@ class DejavuTest(object):
                 self.result_match_confidence[line][col] = 0
 
             else:
-                result = result.strip()
-                result = result.replace(" \'", ' "')
-                result = result.replace("{\'", '{"')
-                result = result.replace("\':", '":')
-                result = result.replace("\',", '",')
-
                 # which song did we predict?
-                result = ast.literal_eval(result)
+                result = json.loads(result)
                 song_result = result["song_name"]
                 log_msg('song: %s' % song)
                 log_msg('song_result: %s' % song_result)

@@ -17,7 +17,7 @@ DEFAULT_CONFIG_FILE = "dejavu.cnf.SAMPLE"
 
 
 def init(configpath):
-    """ 
+    """
     Load config from a JSON file
     """
     try:
@@ -88,6 +88,6 @@ if __name__ == '__main__':
             song = djv.recognize(MicrophoneRecognizer, seconds=opt_arg)
         elif source == 'file':
             song = djv.recognize(FileRecognizer, opt_arg)
-        print(song)
+        print(json.dumps(song))
 
     sys.exit(0)

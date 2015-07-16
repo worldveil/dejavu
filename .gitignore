@@ -5,3 +5,4 @@ mp3
 *.mp3
 .DS_Store
 *.cnf
+results*
