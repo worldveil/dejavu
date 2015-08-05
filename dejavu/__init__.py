@@ -65,7 +65,7 @@ class Dejavu(object):
             song_hash = song[Database.FIELD_FILE_SHA1]
             self.songhashes_set.add(song_hash)
 
-    def fingerprint_directory(self, path, extensions, nprocesses=None, treat_as_split=False, song_name_for_the_split=""):
+    def fingerprint_directory(self, path, extensions, nprocesses=None, treat_as_split=False, song_splitted_sid=""):
         # Try to use the maximum amount of processes if not given.
         try:
             nprocesses = nprocesses or multiprocessing.cpu_count()
@@ -80,7 +80,7 @@ class Dejavu(object):
         for filename, _ in decoder.find_files(path, extensions):
 
             # don't refingerprint already fingerprinted files
-            if decoder.path_to_songname(filename) in self.songnames_set:
+            if decoder.path_to_songname(filename) in self.songhashes_set:
                 print "%s already fingerprinted, continuing..." % filename
                 continue
 
@@ -93,8 +93,6 @@ class Dejavu(object):
         # Send off our tasks
         iterator = pool.imap_unordered(_fingerprint_worker,
                                        worker_input)
-        if treat_as_split and song_name_for_the_split:
-            sid = self.db.insert_song(song_name_for_the_split, file_hash)
 
         # Loop till we have all of them
         while True:
@@ -111,6 +109,8 @@ class Dejavu(object):
             else:
                 if not treat_as_split:
                     sid = self.db.insert_song(song_name, file_hash)
+                else:
+                    sid = song_splitted_sid
                 self.db.insert_hashes(sid, hashes)
                 self.db.set_song_fingerprinted(sid)
                 self.get_fingerprinted_songs()
@@ -145,7 +145,7 @@ class Dejavu(object):
         songname, extension = os.path.splitext(os.path.basename(input_file))
         song_name = song_name or songname
         # don't refingerprint already fingerprinted files
-        if song_name in self.songnames_set:
+        if song_name in self.songhashes_set:
             print "%s already fingerprinted, continuing..." % song_name
             return
         file_directory = os.path.dirname(input_file)
@@ -154,7 +154,9 @@ class Dejavu(object):
         start_offset = 0
         end_offset = split_length
         retcode = 0
-        sid = self.db.insert_song(song_name)
+        song_hash = decoder.unique_hash(input_file)
+
+        sid = self.db.insert_song(song_name, song_hash)
         while start_offset < duration:
             output_file = os.path.join(output_path, "start_sec{0}_end_sec{1}{2}".format(start_offset, end_offset, extension))
             convertion_command = [ 'ffmpeg',
@@ -176,7 +178,7 @@ class Dejavu(object):
         self.get_fingerprinted_songs()
         self.fingerprint_directory(output_path, [extension],
             nprocesses=self.LIMIT_CPU_CORES_FOR_SPLITS,
-            treat_as_split=True, song_name_for_the_split=song_name)
+            treat_as_split=True, song_splitted_sid=sid)
         shutil.rmtree(output_path)
 
     def find_matches(self, samples, Fs=fingerprint.DEFAULT_FS):
