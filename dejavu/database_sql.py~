@@ -238,12 +238,12 @@ class SQLDatabase(Database):
         with self.cursor() as cur:
             cur.execute(self.INSERT_FINGERPRINT, (hash, sid, offset))
 
-    def insert_song(self, songname, file_hash, file_directory):
+    def insert_song(self, songname, file_hash):
         """
         Inserts song in the database and returns the ID of the inserted record.
         """
         with self.cursor() as cur:
-            cur.execute(self.INSERT_SONG, (songname, file_hash, file_directory))
+            cur.execute(self.INSERT_SONG, (songname, file_hash))
             return cur.lastrowid
 
     def query(self, hash):
