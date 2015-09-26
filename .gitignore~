@@ -6,3 +6,4 @@ mp3
 .DS_Store
 *.cnf
 run.py
+run.py~
