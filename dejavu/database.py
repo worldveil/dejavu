@@ -87,8 +87,6 @@ class Database(object):
     def get_song_by_id(self, sid):
         """
         Return a song by its identifier
-
-        sid: Song identifier
         """
         pass
 
@@ -96,10 +94,6 @@ class Database(object):
     def insert(self, hash, sid, offset):
         """
         Inserts a single fingerprint into the database.
-
-          hash: Part of a sha1 hash, in hexadecimal format
-           sid: Song identifier this fingerprint is off
-        offset: The offset this hash is from
         """
         pass
 
@@ -108,8 +102,6 @@ class Database(object):
         """
         Inserts a song name into the database, returns the new
         identifier of the song.
-
-        song_name: The name of the song.
         """
         pass
 
@@ -118,8 +110,6 @@ class Database(object):
         """
         Returns all matching fingerprint entries associated with
         the given hash as parameter.
-
-        hash: Part of a sha1 hash, in hexadecimal format
         """
         pass
 
@@ -134,11 +124,6 @@ class Database(object):
     def insert_hashes(self, sid, hashes):
         """
         Insert a multitude of fingerprints.
-
-           sid: Song identifier the fingerprints belong to
-        hashes: A sequence of tuples in the format (hash, offset)
-        -   hash: Part of a sha1 hash, in hexadecimal format
-        - offset: Offset this hash was created from/at.
         """
         pass
 
@@ -146,15 +131,6 @@ class Database(object):
     def return_matches(self, hashes):
         """
         Searches the database for pairs of (hash, offset) values.
-
-        hashes: A sequence of tuples in the format (hash, offset)
-        -   hash: Part of a sha1 hash, in hexadecimal format
-        - offset: Offset this hash was created from/at.
-
-        Returns a sequence of (sid, offset_difference) tuples.
-
-                      sid: Song identifier
-        offset_difference: (offset - database_offset)
         """
         pass
 

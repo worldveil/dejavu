@@ -5,6 +5,7 @@ import sys
 import json
 import warnings
 import argparse
+import json
 
 from dejavu import Dejavu
 from dejavu.recognize import FileRecognizer
@@ -17,9 +18,6 @@ DEFAULT_CONFIG_FILE = "dejavu.cnf.SAMPLE"
 
 
 def init(configpath):
-    """ 
-    Load config from a JSON file
-    """
     try:
         with open(configpath) as f:
             config = json.load(f)
@@ -29,6 +27,18 @@ def init(configpath):
 
     # create a Dejavu instance
     return Dejavu(config)
+
+def recognizeAllDirectory(path,filename_to_write):
+    djv = init(DEFAULT_CONFIG_FILE)
+    with open(filename_to_write, 'a') as f:
+        for dir_entry in os.listdir(path):
+            file_path = os.path.join(path, dir_entry)
+            song = djv.recognize(FileRecognizer, file_path)
+            print(song)
+            json.dump(song, f)
+            f.write(os.linesep) 
+
+
 
 
 if __name__ == '__main__':
@@ -74,7 +84,7 @@ if __name__ == '__main__':
         elif len(args.fingerprint) == 1:
             filepath = args.fingerprint[0]
             if os.path.isdir(filepath):
-                print("Please specify an extension if you'd like to fingerprint a directory!")
+                print("Please specify an extension of songs!")
                 sys.exit(1)
             djv.fingerprint_file(filepath)
 

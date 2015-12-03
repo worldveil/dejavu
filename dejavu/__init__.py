@@ -117,12 +117,6 @@ class Dejavu(object):
         return self.db.return_matches(hashes)
 
     def align_matches(self, matches):
-        """
-            Finds hash matches that align in time with other matches and finds
-            consensus about which hashes are "true" signal from the audio.
-
-            Returns a dictionary with match information.
-        """
         # align by diffs
         diff_counter = {}
         largest = 0
@@ -168,8 +162,6 @@ class Dejavu(object):
 
 
 def _fingerprint_worker(filename, limit=None, song_name=None):
-    # Pool.imap sends arguments as tuples so we have to unpack
-    # them ourself.
     try:
         filename, limit = filename
     except ValueError:
@@ -182,7 +174,6 @@ def _fingerprint_worker(filename, limit=None, song_name=None):
     channel_amount = len(channels)
 
     for channeln, channel in enumerate(channels):
-        # TODO: Remove prints or change them into optional logging.
         print("Fingerprinting channel %d/%d for %s" % (channeln + 1,
                                                        channel_amount,
                                                        filename))
@@ -190,13 +181,8 @@ def _fingerprint_worker(filename, limit=None, song_name=None):
         print("Finished channel %d/%d for %s" % (channeln + 1, channel_amount,
                                                  filename))
         result |= set(hashes)
-
     return song_name, result, file_hash
 
 
 def chunkify(lst, n):
-    """
-    Splits a list into roughly n equal parts.
-    http://stackoverflow.com/questions/2130016/splitting-a-list-of-arbitrary-size-into-only-roughly-n-equal-parts
-    """
     return [lst[i::n] for i in xrange(n)]
