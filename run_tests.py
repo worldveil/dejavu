@@ -64,12 +64,12 @@ except:
 # set logging 
 if options.log:
     logging.basicConfig(filename=options.log_file, level=logging.DEBUG)
-
+test_time_list = [2, 4, 6, 8, 10]
 # set test seconds
-test_seconds = ['%dsec' % i for i in range(1, options.secs + 1, 1)]
+test_seconds = ['%dsec' % i for i in test_time_list]
 
 # generate testing files
-for i in range(1, options.secs + 1, 1):
+for i in test_time_list:
     generate_test_files(test_folder, options.temp_folder, 
                         i, padding=options.padding)
 

@@ -11,29 +11,15 @@ import random
 import logging
 
 def set_seed(seed=None):
-    """
-    `seed` as None means that the sampling will be random. 
-
-    Setting your own seed means that you can produce the 
-    same experiment over and over. 
-    """
     if seed != None:
         random.seed(seed)
 
 def get_files_recursive(src, fmt):
-    """
-    `src` is the source directory. 
-    `fmt` is the extension, ie ".mp3" or "mp3", etc.
-    """
     for root, dirnames, filenames in os.walk(src):
         for filename in fnmatch.filter(filenames, '*' + fmt):
             yield os.path.join(root, filename)
 
 def get_length_audio(audiopath, extension):
-    """
-    Returns length of audio in seconds. 
-    Returns None if format isn't supported or in case of error. 
-    """
     try:
         audio = AudioSegment.from_file(audiopath, extension.replace(".", ""))
     except:
@@ -42,27 +28,12 @@ def get_length_audio(audiopath, extension):
     return int(len(audio) / 1000.0)
 
 def get_starttime(length, nseconds, padding):
-    """
-    `length` is total audio length in seconds
-    `nseconds` is amount of time to sample in seconds
-    `padding` is off-limits seconds at beginning and ending
-    """
     maximum = length - padding - nseconds
     if padding > maximum:
         return 0
     return random.randint(padding, maximum)
 
 def generate_test_files(src, dest, nseconds, fmts=[".mp3", ".wav"], padding=10):
-    """
-    Generates a test file for each file recursively in `src` directory
-    of given format using `nseconds` sampled from the audio file. 
-
-    Results are written to `dest` directory.
-
-    `padding` is the number of off-limit seconds and the beginning and
-    end of a track that won't be sampled in testing. Often you want to 
-    avoid silence, etc. 
-    """
     # create directories if necessary
     for directory in [src, dest]:
         try:
@@ -169,9 +140,9 @@ class DejavuTest(object):
             ind = np.arange(self.n_lines) #
             width = 0.25       # the width of the bars
 
-            fig = plt.figure()
+            fig = plt.figure(figsize=(50,15))
             ax = fig.add_subplot(111)
-            ax.set_xlim([-1 * width, 2 * width])
+            ax.set_xlim([-1 * width, 5 * width])
 
             means_dvj = [x[0] for x in results[sec]]
             rects1 = ax.bar(ind, means_dvj, width, color='r')

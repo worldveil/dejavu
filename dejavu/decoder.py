@@ -8,9 +8,7 @@ from hashlib import sha1
 
 def unique_hash(filepath, blocksize=2**20):
     """ Small function to generate a hash to uniquely generate
-    a file. Inspired by MD5 version here:
-    http://stackoverflow.com/a/1131255/712997
-
+    a file. 
     Works with large files. 
     """
     s = sha1()
@@ -39,12 +37,6 @@ def read(filename, limit=None):
     Reads any file supported by pydub (ffmpeg) and returns the data contained
     within. If file reading fails due to input being a 24-bit wav file,
     wavio is used as a backup.
-
-    Can be optionally limited to a certain amount of seconds from the start
-    of the file by specifying the `limit` parameter. This is the amount of
-    seconds from the start of the file.
-
-    returns: (channels, samplerate)
     """
     # pydub does not support 24-bit wav files, use wavio when this occurs
     try:
