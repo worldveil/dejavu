@@ -68,12 +68,12 @@ However installing `portaudio` and/or `ffmpeg` from source is also doable.
 
 Tested on Windows 7.
 
-If your python installation does not have pip, follow
+If your python installation does not have `pip`, follow
 [these instructions](https://pip.pypa.io/en/latest/installing).
 
-Install numpy, scipy and matplotlib by downloading binaries from
+Install `numpy`, `scipy` and `matplotlib` by downloading binaries from
 [this site](http://www.lfd.uci.edu/~gohlke/pythonlibs/) if you can't
-install them using pip. You can do the same for any other module that you can't install using pip.
+install them using `pip`. You can do the same for any other module that you can't install using `pip`.
 
 Install
 [MySQL Community Server](https://dev.mysql.com/downloads/mysql) and
@@ -84,8 +84,8 @@ Get the appropriate static build of
 [FFmpeg](http://ffmpeg.zeranoe.com/builds/) and add the bin directory
 (includes ffmpeg.exe) to system path (environment variable).
 
-'''
+```
 pip install pyaudio
 pip install pydub
 pip install mysqlclient
-'''
+```
