@@ -16,7 +16,8 @@ Read [INSTALLATION.md](INSTALLATION.md)
 
 Alternatively, you can build a docker image from the Dockerfile included:
 	          
-```bash
+```bash  
+$ git clone https://github.com/worldveil/dejavu.git
 $ docker build -t dejavu .
 ```
 	                                        
