@@ -10,7 +10,28 @@ Note that for voice recognition, Dejavu is not the right tool! Dejavu excels at 
 
 ## Installation and Dependencies:
 
-Read [INSTALLATION.md](INSTALLATION.md)
+Read [INSTALLATION.md](INSTALLATION.md)         
+
+### Docker
+
+Alternatively, you can build a docker image from the Dockerfile included:
+	          
+```bash
+$ docker build -t dejavu .
+```
+	                                        
+And run a container from that image:
+    
+```bash
+$ run -it dejavu /bin/bash
+```
+
+Inside the container, you can find the app inside /app:
+
+```bash
+$ cd /app
+$ python example.py
+```      
 
 ## Setup
 
