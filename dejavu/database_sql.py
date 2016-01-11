@@ -52,6 +52,7 @@ class SQLDatabase(Database):
 
     # fields
     FIELD_FINGERPRINTED = "fingerprinted"
+    FIELD_MATCH_COUNTS = "matchcounts"
 
     # creates
     CREATE_FINGERPRINTS_TABLE = """
@@ -75,11 +76,12 @@ class SQLDatabase(Database):
             `%s` varchar(250) not null,
             `%s` tinyint default 0,
             `%s` binary(20) not null,
+            `%s` int unsigned default 0,
         PRIMARY KEY (`%s`),
         UNIQUE KEY `%s` (`%s`)
     ) ENGINE=INNODB;""" % (
         SONGS_TABLENAME, Database.FIELD_SONG_ID, Database.FIELD_SONGNAME, FIELD_FINGERPRINTED,
-        Database.FIELD_FILE_SHA1,
+        Database.FIELD_FILE_SHA1, FIELD_MATCH_COUNTS,
         Database.FIELD_SONG_ID, Database.FIELD_SONG_ID, Database.FIELD_SONG_ID,
     )
 
@@ -91,6 +93,10 @@ class SQLDatabase(Database):
 
     INSERT_SONG = "INSERT INTO %s (%s, %s) values (%%s, UNHEX(%%s));" % (
         SONGS_TABLENAME, Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1)
+
+    UPDATE_MATCH_COUNT = "UPDATE %s SET %s = %s + 1 WHERE %s = %%s;" % (
+        SONGS_TABLENAME, FIELD_MATCH_COUNTS, FIELD_MATCH_COUNTS, Database.FIELD_SONG_ID
+    )
 
     # selects
     SELECT = """
@@ -209,6 +215,14 @@ class SQLDatabase(Database):
         """
         with self.cursor() as cur:
             cur.execute(self.UPDATE_SONG_FINGERPRINTED, (sid,))
+
+    def update_match_record(self, sid):
+        """
+        Increment the record representing number of times the given
+        song (sid) has been matched or recognized.
+        """
+        with self.cursor() as cur:
+            cur.execute(self.UPDATE_MATCH_COUNT, (sid,))
 
     def get_songs(self):
         """

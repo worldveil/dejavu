@@ -146,6 +146,10 @@ class Dejavu(object):
         if song:
             # TODO: Clarify what `get_song_by_id` should return.
             songname = song.get(Dejavu.SONG_NAME, None)
+
+            # We have a match, increment the number of times
+            # we have matched (recognized) this song.
+            self.db.update_match_record(song_id)
         else:
             return None
 
