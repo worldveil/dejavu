@@ -10,6 +10,7 @@ class Database(object):
     FIELD_SONGNAME = 'song_name'
     FIELD_OFFSET = 'offset'
     FIELD_HASH = 'hash'
+    FIELD_SONG_DIRECTORY = 'directory'
 
     # Name of your Database subclass, this is used in configuration
     # to refer to your class
@@ -157,6 +158,16 @@ class Database(object):
         offset_difference: (offset - database_offset)
         """
         pass
+
+  #  @abc.abstractmethod
+   # def write_matches(self):
+        """
+        TODO:
+        Go through database and rewrite all the song names
+        that have been fingerprinted. Should run only at the end
+        of fingerprinting
+        """
+    #    pass
 
 
 def get_database(database_type=None):

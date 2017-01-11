@@ -75,11 +75,12 @@ class SQLDatabase(Database):
             `%s` varchar(250) not null,
             `%s` tinyint default 0,
             `%s` binary(20) not null,
+            `%s` varchar(250),
         PRIMARY KEY (`%s`),
         UNIQUE KEY `%s` (`%s`)
     ) ENGINE=INNODB;""" % (
         SONGS_TABLENAME, Database.FIELD_SONG_ID, Database.FIELD_SONGNAME, FIELD_FINGERPRINTED,
-        Database.FIELD_FILE_SHA1,
+        Database.FIELD_FILE_SHA1, Database.FIELD_SONG_DIRECTORY,
         Database.FIELD_SONG_ID, Database.FIELD_SONG_ID, Database.FIELD_SONG_ID,
     )
 
@@ -89,8 +90,8 @@ class SQLDatabase(Database):
             (UNHEX(%%s), %%s, %%s);
     """ % (FINGERPRINTS_TABLENAME, Database.FIELD_HASH, Database.FIELD_SONG_ID, Database.FIELD_OFFSET)
 
-    INSERT_SONG = "INSERT INTO %s (%s, %s) values (%%s, UNHEX(%%s));" % (
-        SONGS_TABLENAME, Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1)
+    INSERT_SONG = "INSERT INTO %s (%s, %s, %s) values (%%s, UNHEX(%%s), %%s);" % (
+        SONGS_TABLENAME, Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1, Database.FIELD_SONG_DIRECTORY)
 
     # selects
     SELECT = """
@@ -141,6 +142,9 @@ class SQLDatabase(Database):
         super(SQLDatabase, self).__init__()
         self.cursor = cursor_factory(**options)
         self._options = options
+
+    #def write_matches(self):
+    #    
 
     def after_fork(self):
         # Clear the cursor cache, we don't want any stale connections from
@@ -234,12 +238,12 @@ class SQLDatabase(Database):
         with self.cursor() as cur:
             cur.execute(self.INSERT_FINGERPRINT, (hash, sid, offset))
 
-    def insert_song(self, songname, file_hash):
+    def insert_song(self, songname, file_hash, file_directory):
         """
         Inserts song in the database and returns the ID of the inserted record.
         """
         with self.cursor() as cur:
-            cur.execute(self.INSERT_SONG, (songname, file_hash))
+            cur.execute(self.INSERT_SONG, (songname, file_hash, file_directory))
             return cur.lastrowid
 
     def query(self, hash):
