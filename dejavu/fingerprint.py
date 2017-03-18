@@ -113,18 +113,25 @@ def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
     peaks_filtered = [x for x in peaks if x[2] > amp_min]  # freq, time, amp
 
     # get indices for frequency and time
-    frequency_idx = [x[1] for x in peaks_filtered]
-    time_idx = [x[0] for x in peaks_filtered]
-
+#     frequency_idx = [x[1] for x in peaks_filtered]
+#     time_idx = [x[0] for x in peaks_filtered]
+    frequency_idx = [x[0] for x in peaks_filtered]
+    time_idx = [x[1] for x in peaks_filtered]
+    frequency = [x[2] for x in peaks_filtered]
     if plot:
         # scatter of the peaks
-        fig, ax = plt.subplots()
-        ax.imshow(arr2D)
-        ax.scatter(time_idx, frequency_idx)
-        ax.set_xlabel('Time')
-        ax.set_ylabel('Frequency')
-        ax.set_title("Spectrogram")
-        plt.gca().invert_yaxis()
+#         fig, ax = plt.subplots()
+#         ax.imshow(arr2D)
+#         ax.scatter(time_idx, frequency_idx)
+#         ax.set_xlabel('Time')
+#         ax.set_ylabel('Frequency')
+#         ax.set_title("Spectrogram")
+#         plt.gca().invert_yaxis()
+        plt.figure()
+        plt.plot(time_idx,arr2D[time_idx],'ro',time_idx,frequency,'bo')
+        plt.xlabel('Time')
+        plt.ylabel('Frequency')
+        plt.title("Spectrogram")
         plt.show()
 
     return zip(frequency_idx, time_idx)
