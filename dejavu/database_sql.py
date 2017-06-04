@@ -274,9 +274,8 @@ class SQLDatabase(Database):
 
 		with self.cursor() as cur:
 			for split_values in grouper(values, 1000):
-				lst = list(split_values)
-				#print('split_vals', lst)
-				cur.executemany(self.INSERT_FINGERPRINT, lst)
+				#print('split_vals', split_values)
+				cur.executemany(self.INSERT_FINGERPRINT, split_values)
 
 	def return_matches(self, hashes):
 		"""
@@ -295,10 +294,9 @@ class SQLDatabase(Database):
 			for split_values in grouper(values, 1000):
 				# Create our IN part of the query
 				query = self.SELECT_MULTIPLE
-				lstvals = list(split_values)
-				query = query % ', '.join(['UNHEX(%s)'] * len(lstvals))
+				query = query % ', '.join(['UNHEX(%s)'] * len(split_values))
 
-				cur.execute(query, lstvals)
+				cur.execute(query, split_values)
 
 				for hashit, sid, offset in cur:
 					# (sid, db_offset - song_sampled_offset)
@@ -314,8 +312,7 @@ class SQLDatabase(Database):
 
 def grouper(iterable, n, fillvalue=None):
 	args = [iter(iterable)] * n
-	return (filter(None, values) for values
-			in zip_longest(*args, fillvalue=fillvalue))
+	return (list(filter(None, values)) for values in zip_longest(*args, fillvalue=fillvalue))
 
 
 def cursor_factory(**factory_options):
