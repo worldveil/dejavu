@@ -1,8 +1,7 @@
 from __future__ import absolute_import
 import abc
 
-
-class Database(object):
+class Database():
     __metaclass__ = abc.ABCMeta
 
     FIELD_FILE_SHA1 = 'file_sha1'
