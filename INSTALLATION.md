@@ -12,6 +12,9 @@ So far Dejavu has only been tested on Unix systems.
 
 For installing `ffmpeg` on Mac OS X, I highly recommend [this post](http://jungels.net/articles/ffmpeg-howto.html).
 
+## Docker
+If you don't require the use of a microphone then we'd recommend using Docker.
+
 ## Fedora 20+
 
 ### Dependency installation on Fedora 20+

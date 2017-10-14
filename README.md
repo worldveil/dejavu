@@ -8,6 +8,24 @@ Dejavu can memorize audio by listening to it once and fingerprinting it. Then by
 
 Note that for voice recognition, Dejavu is not the right tool! Dejavu excels at recognition of exact signals with reasonable amounts of noise.
 
+## Quickstart with Docker
+Note: When using Docker, microphone input is not supported. See below if you wish to run Dejavu without Docker.
+
+[Download & install Docker](https://www.docker.com/community-edition#/download) then follow the steps below:
+
+```bash
+$ cd ./docker # Run docker-compose from this directory.
+
+$ docker-compose up -d
+# Wait a minute for the database to start up.
+
+# Run "python example.py" in the Dejavu container for Docker.
+$ docker-compose run dejavu python example.py
+
+# When you're all done, clean everything up.
+$ docker-compose down
+```
+
 ## Installation and Dependencies:
 
 Read [INSTALLATION.md](INSTALLATION.md)
