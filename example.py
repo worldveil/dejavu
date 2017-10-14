@@ -9,7 +9,7 @@ from dejavu.recognize import FileRecognizer, MicrophoneRecognizer
 # checking to see if running in Docker container
 env_is_docker = os.getenv('DOCKER_ENV', False)
 if env_is_docker:
-	print "You are running Dejavu in Docker! :)"
+	print "You are running Dejavu in Docker."
 config_file_name = "dejavu.cnf.DOCKER" if env_is_docker else "dejavu.cnf.SAMPLE"
 
 # load config from a JSON file (or anything outputting a python dictionary)

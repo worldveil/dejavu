@@ -14,8 +14,6 @@ Note: When using Docker, microphone input is not supported. See below if you wis
 [Download & install Docker](https://www.docker.com/community-edition#/download) then follow the steps below:
 
 ```bash
-$ cd ./docker # Run docker-compose from this directory.
-
 $ docker-compose up -d
 # Wait a minute for the database to start up.
 

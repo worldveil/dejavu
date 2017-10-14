@@ -1,7 +1,6 @@
 version: "3"
 services:
     db:
-      env_file: .env
       image: mysql
       container_name: ${MYSQL_CONTAINER_NAME}
       environment:
@@ -9,7 +8,6 @@ services:
       networks:
         - db-backend
     db-setup:
-      env_file: .env
       image: mysql
       container_name: ${MYSQL_CONTAINER_NAME}-setup
       command: >
@@ -22,12 +20,13 @@ services:
       depends_on:
         - db
     dejavu:
-      env_file: .dejavu_env
+      env_file: ./docker/.dejavu_env
       container_name: dejavu
       image: dejavu
       volumes:
-        - ../:/dejavu
+        - .:/dejavu
       build:
+        dockerfile: ./docker/Dockerfile
         context: ./
         args:
           http_proxy: ${http_proxy}
