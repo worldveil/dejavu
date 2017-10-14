@@ -1,12 +1,19 @@
 import warnings
 import json
+import os
 warnings.filterwarnings("ignore")
 
 from dejavu import Dejavu
 from dejavu.recognize import FileRecognizer, MicrophoneRecognizer
 
+# checking to see if running in Docker container
+env_is_docker = os.getenv('DOCKER_ENV', False)
+if env_is_docker:
+	print "You are running Dejavu in Docker! :)"
+config_file_name = "dejavu.cnf.DOCKER" if env_is_docker else "dejavu.cnf.SAMPLE"
+
 # load config from a JSON file (or anything outputting a python dictionary)
-with open("dejavu.cnf.DOCKER") as f:
+with open(config_file_name) as f:
     config = json.load(f)
 
 if __name__ == '__main__':
@@ -22,12 +29,15 @@ if __name__ == '__main__':
 	print "From file we recognized: %s\n" % song
 
 	# Or recognize audio from your microphone for `secs` seconds
-	secs = 5
-	song = djv.recognize(MicrophoneRecognizer, seconds=secs)
-	if song is None:
-		print "Nothing recognized -- did you play the song out loud so your mic could hear it? :)"
+	if not env_is_docker:
+		secs = 5
+		song = djv.recognize(MicrophoneRecognizer, seconds=secs)
+		if song is None:
+			print "Nothing recognized -- did you play the song out loud so your mic could hear it? :)"
+		else:
+			print "From mic with %d seconds we recognized: %s\n" % (secs, song)
 	else:
-		print "From mic with %d seconds we recognized: %s\n" % (secs, song)
+		print "Microphone input isn't support using Docker. Skipping microphone recognition..."
 
 	# Or use a recognizer without the shortcut, in anyway you would like
 	recognizer = FileRecognizer(djv)

@@ -22,6 +22,7 @@ services:
       depends_on:
         - db
     dejavu:
+      env_file: .dejavu_env
       container_name: dejavu
       image: dejavu
       volumes:
