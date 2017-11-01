@@ -1,9 +1,13 @@
 import os
 import fnmatch
 import numpy as np
-from pydub import AudioSegment
-from pydub.utils import audioop
+try:
+    from pydub import AudioSegment
+    from pydub.utils import audioop
+except ImportError:
+    AudioSegment = None
 import wavio
+import wave
 from hashlib import sha1
 
 def unique_hash(filepath, blocksize=2**20):
@@ -48,6 +52,20 @@ def read(filename, limit=None):
     """
     # pydub does not support 24-bit wav files, use wavio when this occurs
     try:
+        fs, _, audiofile = wavio.readwav(filename)
+
+        if limit:
+            audiofile = audiofile[:limit * 1000]
+
+        audiofile = audiofile.T
+        audiofile = audiofile.astype(np.int16)
+
+        channels = []
+        for chn in audiofile:
+            channels.append(chn)
+    except wave.Error:
+        if AudioSegment is None:
+            raise TypeError("Cannot parse file {} because pydub/ffmpeg is not installed".format(filename))
         audiofile = AudioSegment.from_file(filename)
 
         if limit:
@@ -60,20 +78,8 @@ def read(filename, limit=None):
             channels.append(data[chn::audiofile.channels])
 
         fs = audiofile.frame_rate
-    except audioop.error:
-        fs, _, audiofile = wavio.readwav(filename)
 
-        if limit:
-            audiofile = audiofile[:limit * 1000]
-
-        audiofile = audiofile.T
-        audiofile = audiofile.astype(np.int16)
-
-        channels = []
-        for chn in audiofile:
-            channels.append(chn)
-
-    return channels, audiofile.frame_rate, unique_hash(filename)
+    return channels, fs, unique_hash(filename)
 
 
 def path_to_songname(path):
