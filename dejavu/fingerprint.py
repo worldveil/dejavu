@@ -65,7 +65,11 @@ def fingerprint(channel_samples, Fs=DEFAULT_FS,
                 wsize=DEFAULT_WINDOW_SIZE,
                 wratio=DEFAULT_OVERLAP_RATIO,
                 fan_value=DEFAULT_FAN_VALUE,
-                amp_min=DEFAULT_AMP_MIN):
+                amp_min=DEFAULT_AMP_MIN,
+                peak_sort=PEAK_SORT,
+                fingerprint_reduction=FINGERPRINT_REDUCTION,
+                min_hash_time_delta=MIN_HASH_TIME_DELTA,
+                max_hash_time_delta=MAX_HASH_TIME_DELTA):
     """
     FFT the channel, log transform output, find local maxima, then return
     locally sensitive hashes.
@@ -86,7 +90,12 @@ def fingerprint(channel_samples, Fs=DEFAULT_FS,
     local_maxima = get_2D_peaks(arr2D, plot=False, amp_min=amp_min)
 
     # return hashes
-    return generate_hashes(local_maxima, fan_value=fan_value)
+    return generate_hashes(local_maxima,
+                           fan_value=fan_value,
+                           peak_sort=peak_sort,
+                           fingerprint_reduction=fingerprint_reduction,
+                           min_hash_time_delta=min_hash_time_delta,
+                           max_hash_time_delta=max_hash_time_delta)
 
 
 def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
@@ -130,13 +139,19 @@ def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
     return zip(frequency_idx, time_idx)
 
 
-def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
+def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE,
+                    peak_sort=PEAK_SORT,
+                    fingerprint_reduction=FINGERPRINT_REDUCTION,
+                    min_hash_time_delta=MIN_HASH_TIME_DELTA,
+                    max_hash_time_delta=MAX_HASH_TIME_DELTA):
     """
     Hash list structure:
        sha1_hash[0:20]    time_offset
     [(e05b341a9b77a51fd26, 32), ... ]
     """
-    if PEAK_SORT:
+    if fingerprint_reduction <= 0:
+        fingerprint_reduction = FINGERPRINT_REDUCTION
+    if peak_sort:
         peaks.sort(key=itemgetter(1))
 
     for i in range(len(peaks)):
@@ -149,7 +164,7 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
                 t2 = peaks[i + j][IDX_TIME_J]
                 t_delta = t2 - t1
 
-                if t_delta >= MIN_HASH_TIME_DELTA and t_delta <= MAX_HASH_TIME_DELTA:
+                if t_delta >= min_hash_time_delta and t_delta <= max_hash_time_delta:
                     h = hashlib.sha1(
                         "%s|%s|%s" % (str(freq1), str(freq2), str(t_delta)))
-                    yield (h.hexdigest()[0:FINGERPRINT_REDUCTION], t1)
+                    yield (h.hexdigest()[0:fingerprint_reduction], t1)

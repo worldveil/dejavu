@@ -10,6 +10,9 @@ class BaseRecognizer(object):
     def __init__(self, dejavu):
         self.dejavu = dejavu
         self.Fs = fingerprint.DEFAULT_FS
+        if self.dejavu.fingerprint_config:
+            self.Fs = self.dejavu.fingerprint_config.get('DEFAULT_FS',
+                                                         fingerprint.DEFAULT_FS)
 
     def _recognize(self, *data):
         matches = []

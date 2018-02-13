@@ -32,6 +32,7 @@ class Dejavu(object):
         self.limit = self.config.get("fingerprint_limit", None)
         if self.limit == -1:  # for JSON compatibility
             self.limit = None
+        self.fingerprint_config = self.config.get("fingerprint_config", {})
         self.get_fingerprinted_songs()
 
     def get_fingerprinted_songs(self):
@@ -65,7 +66,9 @@ class Dejavu(object):
 
         # Prepare _fingerprint_worker input
         worker_input = zip(filenames_to_fingerprint,
-                           [self.limit] * len(filenames_to_fingerprint))
+                           [self.limit] * len(filenames_to_fingerprint),
+                           [self.fingerprint_config] *
+                           len(filenames_to_fingerprint))
 
         # Send off our tasks
         iterator = pool.imap_unordered(_fingerprint_worker,
@@ -150,9 +153,7 @@ class Dejavu(object):
             return None
 
         # return match info
-        nseconds = round(float(largest) / fingerprint.DEFAULT_FS *
-                         fingerprint.DEFAULT_WINDOW_SIZE *
-                         fingerprint.DEFAULT_OVERLAP_RATIO, 5)
+        nseconds = self._get_nseconds(largest)
         song = {
             Dejavu.SONG_ID : song_id,
             Dejavu.SONG_NAME : songname,
@@ -166,12 +167,22 @@ class Dejavu(object):
         r = recognizer(self)
         return r.recognize(*options, **kwoptions)
 
+    def _get_nseconds(self, largest):
+        fs = self.fingerprint_config.get('DEFAULT_FS', fingerprint.DEFAULT_FS)
+        window_size = self.fingerprint_config.\
+            get('DEFAULT_WINDOW_SIZE', fingerprint.DEFAULT_WINDOW_SIZE)
+        overlap_ratio = self.fingerprint_config.\
+            get('DEFAULT_OVERLAP_RATIO', fingerprint.DEFAULT_OVERLAP_RATIO)
 
-def _fingerprint_worker(filename, limit=None, song_name=None):
+        return round(float(largest) / fs * window_size * overlap_ratio, 5)
+
+
+def _fingerprint_worker(filename, limit=None, song_name=None,
+                        fingerprint_config=None):
     # Pool.imap sends arguments as tuples so we have to unpack
     # them ourself.
     try:
-        filename, limit = filename
+        filename, limit, fingerprint_config = filename
     except ValueError:
         pass
 
@@ -186,12 +197,38 @@ def _fingerprint_worker(filename, limit=None, song_name=None):
         print("Fingerprinting channel %d/%d for %s" % (channeln + 1,
                                                        channel_amount,
                                                        filename))
-        hashes = fingerprint.fingerprint(channel, Fs=Fs)
+        if not fingerprint_config:
+            hashes = fingerprint.fingerprint(channel, Fs=Fs)
+        else:
+            args = _expand_fingerprint_config(fingerprint_config)
+            hashes = fingerprint.fingerprint(channel, **args)
+
         print("Finished channel %d/%d for %s" % (channeln + 1, channel_amount,
                                                  filename))
         result |= set(hashes)
 
     return song_name, result, file_hash
+
+
+def _expand_fingerprint_config(conf):
+    params = {}
+    if conf.get('DEFAULT_FS', None):
+        params['Fs'] = conf.get('DEFAULT_FS')
+    if conf.get('DEFAULT_WINDOW_SIZE', None):
+        params['wsize'] = conf.get('DEFAULT_WINDOW_SIZE')
+    if conf.get('DEFAULT_FAN_VALUE', None):
+        params['fan_value'] = conf.get('DEFAULT_FAN_VALUE')
+    if conf.get('DEFAULT_AMP_MIN', None):
+        params['amp_min'] = conf.get('amp_min')
+    if conf.get('PEAK_SORT', None):
+        params['peak_sort'] = conf.get('peak_sort')
+    if conf.get('FINGERPRINT_REDUCTION', None):
+        params['fingerprint_reduction'] = conf.get('FINGERPRINT_REDUCTION')
+    if conf.get('MIN_HASH_TIME_DELTA', None):
+        params['min_hash_time_delta'] = conf.get('MIN_HASH_TIME_DELTA')
+    if conf.get('MAX_HASH_TIME_DELTA', None):
+        params['max_hash_time_delta'] = conf.get('MAX_HASH_TIME_DELTA')
+    return params
 
 
 def chunkify(lst, n):
