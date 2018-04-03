@@ -15,6 +15,7 @@ class Dejavu(object):
     MATCH_TIME = 'match_time'
     OFFSET = 'offset'
     OFFSET_SECS = 'offset_seconds'
+    AUDIO_LENGTH = 'audio_length'
 
     def __init__(self, config):
         super(Dejavu, self).__init__()
@@ -74,7 +75,7 @@ class Dejavu(object):
         # Loop till we have all of them
         while True:
             try:
-                song_name, hashes, file_hash = iterator.next()
+                song_name, hashes, file_hash, audio_length = iterator.next()
             except multiprocessing.TimeoutError:
                 continue
             except StopIteration:
@@ -84,7 +85,7 @@ class Dejavu(object):
                 # Print traceback because we can't reraise it here
                 traceback.print_exc(file=sys.stdout)
             else:
-                sid = self.db.insert_song(song_name, file_hash)
+                sid = self.db.insert_song(song_name, file_hash, audio_length)
 
                 self.db.insert_hashes(sid, hashes)
                 self.db.set_song_fingerprinted(sid)
@@ -101,12 +102,12 @@ class Dejavu(object):
         if song_hash in self.songhashes_set:
             print "%s already fingerprinted, continuing..." % song_name
         else:
-            song_name, hashes, file_hash = _fingerprint_worker(
+            song_name, hashes, file_hash, audio_length = _fingerprint_worker(
                 filepath,
                 self.limit,
                 song_name=song_name
             )
-            sid = self.db.insert_song(song_name, file_hash)
+            sid = self.db.insert_song(song_name, file_hash, audio_length)
 
             self.db.insert_hashes(sid, hashes)
             self.db.set_song_fingerprinted(sid)
@@ -157,6 +158,7 @@ class Dejavu(object):
             Dejavu.SONG_ID : song_id,
             Dejavu.SONG_NAME : songname,
             Dejavu.CONFIDENCE : largest_count,
+            Dejavu.AUDIO_LENGTH : song.get(Database.AUDIO_LENGTH, None),
             Dejavu.OFFSET : int(largest),
             Dejavu.OFFSET_SECS : nseconds,
             Database.FIELD_FILE_SHA1 : song.get(Database.FIELD_FILE_SHA1, None),}
@@ -177,7 +179,7 @@ def _fingerprint_worker(filename, limit=None, song_name=None):
 
     songname, extension = os.path.splitext(os.path.basename(filename))
     song_name = song_name or songname
-    channels, Fs, file_hash = decoder.read(filename, limit)
+    channels, Fs, file_hash, audio_length = decoder.read(filename, limit)
     result = set()
     channel_amount = len(channels)
 
@@ -191,7 +193,7 @@ def _fingerprint_worker(filename, limit=None, song_name=None):
                                                  filename))
         result |= set(hashes)
 
-    return song_name, result, file_hash
+    return song_name, result, file_hash, audio_length
 
 
 def chunkify(lst, n):
