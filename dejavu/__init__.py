@@ -16,6 +16,7 @@ class Dejavu(object):
     OFFSET = 'offset'
     OFFSET_SECS = 'offset_seconds'
     AUDIO_LENGTH = 'audio_length'
+    MATCH_PERCENT = 'match_percent'
 
     def __init__(self, config):
         super(Dejavu, self).__init__()
@@ -159,6 +160,7 @@ class Dejavu(object):
             Dejavu.SONG_NAME : songname,
             Dejavu.CONFIDENCE : largest_count,
             Dejavu.AUDIO_LENGTH : song.get(Database.AUDIO_LENGTH, None),
+            Dejavu.MATCH_PERCENT : (largest_count*100)/float(len(matches)),
             Dejavu.OFFSET : int(largest),
             Dejavu.OFFSET_SECS : nseconds,
             Database.FIELD_FILE_SHA1 : song.get(Database.FIELD_FILE_SHA1, None),}
