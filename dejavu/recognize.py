@@ -61,6 +61,7 @@ class MicrophoneRecognizer(BaseRecognizer):
     def start_recording(self, channels=default_channels,
                         samplerate=default_samplerate,
                         chunksize=default_chunksize):
+        print("* start recording")
         self.chunksize = chunksize
         self.channels = channels
         self.recorded = False
@@ -81,12 +82,15 @@ class MicrophoneRecognizer(BaseRecognizer):
         self.data = [[] for i in range(channels)]
 
     def process_recording(self):
+        print("* recording")
         data = self.stream.read(self.chunksize)
         nums = np.fromstring(data, np.int16)
+        # print(nums)
         for c in range(self.channels):
             self.data[c].extend(nums[c::self.channels])
 
     def stop_recording(self):
+        print("* done recording")
         self.stream.stop_stream()
         self.stream.close()
         self.stream = None
@@ -102,8 +106,7 @@ class MicrophoneRecognizer(BaseRecognizer):
 
     def recognize(self, seconds=10):
         self.start_recording()
-        for i in range(0, int(self.samplerate / self.chunksize
-                              * seconds)):
+        for i in range(0, int(self.samplerate / self.chunksize * int(seconds))):
             self.process_recording()
         self.stop_recording()
         return self.recognize_recording()
