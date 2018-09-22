@@ -167,7 +167,7 @@ class SQLDatabase(Database):
         .. warning:
             This will result in a loss of data
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.DROP_FINGERPRINTS)
             cur.execute(self.DROP_SONGS)
 
