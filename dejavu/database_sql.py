@@ -154,7 +154,7 @@ class SQLDatabase(Database):
         This also removes all songs that have been added but have no
         fingerprints associated with them.
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.CREATE_SONGS_TABLE)
             cur.execute(self.CREATE_FINGERPRINTS_TABLE)
             cur.execute(self.DELETE_UNFINGERPRINTED)
@@ -177,14 +177,14 @@ class SQLDatabase(Database):
         """
         Removes all songs that have no fingerprints associated with them.
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.DELETE_UNFINGERPRINTED)
 
     def get_num_songs(self):
         """
         Returns number of songs the database has fingerprinted.
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.SELECT_UNIQUE_SONG_IDS)
 
             for count, in cur:
@@ -195,7 +195,7 @@ class SQLDatabase(Database):
         """
         Returns number of fingerprints the database has fingerprinted.
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.SELECT_NUM_FINGERPRINTS)
 
             for count, in cur:
@@ -207,7 +207,7 @@ class SQLDatabase(Database):
         Set the fingerprinted flag to TRUE (1) once a song has been completely
         fingerprinted in the database.
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.UPDATE_SONG_FINGERPRINTED, (sid,))
 
     def get_songs(self):
@@ -231,14 +231,14 @@ class SQLDatabase(Database):
         """
         Insert a (sha1, song_id, offset) row into database.
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.INSERT_FINGERPRINT, (hash, sid, offset))
 
     def insert_song(self, songname, file_hash):
         """
         Inserts song in the database and returns the ID of the inserted record.
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.INSERT_SONG, (songname, file_hash))
             return cur.lastrowid
 
@@ -252,7 +252,7 @@ class SQLDatabase(Database):
         # select all if no key
         query = self.SELECT_ALL if hash is None else self.SELECT
 
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(query)
             for sid, offset in cur:
                 yield (sid, offset)
@@ -272,7 +272,7 @@ class SQLDatabase(Database):
         for hash, offset in hashes:
             values.append((hash, sid, offset))
 
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             for split_values in grouper(values, 1000):
                 cur.executemany(self.INSERT_FINGERPRINT, split_values)
 
@@ -289,7 +289,7 @@ class SQLDatabase(Database):
         # Get an iteratable of all the hashes we need
         values = mapper.keys()
 
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             for split_values in grouper(values, 1000):
                 # Create our IN part of the query
                 query = self.SELECT_MULTIPLE
