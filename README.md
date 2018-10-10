@@ -295,3 +295,15 @@ wav | 1885
 fingerprints | 377
 
 There's a pretty direct trade-off between the necessary record time and the amount of storage needed. Adjusting the amplitude threshold for peaks and the fan value for fingerprinting will add more fingerprints and bolster the accuracy at the expense of more space. 
+
+## Update - SQLite is now supported
+
+For the moment, in order to use SQLite as the database solution, you must add 
+    
+    import dejavu.database_sqlite
+
+to the end of 'dejavu/database.py'.
+
+SQLite support requires python's 'sqlite3' library, but does not need mysql. The 'dejavu.database_sql' import at the end of 'dejavu/database.py' is optional for SQLite only, but still necessary for mysql support.
+
+An example of a configuration file for SQLite is in the project root titled 'dejavu.cnf.SQLITE_SAMPLE'.
