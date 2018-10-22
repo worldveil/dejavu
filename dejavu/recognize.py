@@ -13,9 +13,12 @@ class BaseRecognizer(object):
 
     def _recognize(self, *data):
         matches = []
+        total_hashes = 0
         for d in data:
-            matches.extend(self.dejavu.find_matches(d, Fs=self.Fs))
-        return self.dejavu.align_matches(matches)
+            extracted_matches = self.dejavu.find_matches(d, Fs=self.Fs)
+            total_hashes += extracted_matches[1]
+            matches.extend(extracted_matches[0])
+        return self.dejavu.align_matches(matches, total_hashes)
 
     def recognize(self):
         pass  # base class does nothing
