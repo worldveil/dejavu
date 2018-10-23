@@ -119,7 +119,7 @@ class Dejavu(object):
         mapper = {}
         total_hashes = 0
         for hash, offset in hashes:
-            mapper[hash.upper()] = offset
+            mapper[hash.upper()[:fingerprint.FINGERPRINT_REDUCTION]] = offset
             total_hashes += 1
         return (self.db.return_matches(mapper), total_hashes)
 
