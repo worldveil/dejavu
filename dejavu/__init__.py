@@ -86,12 +86,14 @@ class Dejavu(object):
                 # Print traceback because we can't reraise it here
                 traceback.print_exc(file=sys.stdout)
             else:
+                print("Inserting " + song_name + " in database")
                 sid = self.db.insert_song(song_name, file_hash, audio_length)
 
                 self.db.insert_hashes(sid, hashes)
                 self.db.set_song_fingerprinted(sid)
                 self.get_fingerprinted_songs()
 
+                print(song_name + " inserted in database")
         pool.close()
         pool.join()
 
@@ -108,17 +110,24 @@ class Dejavu(object):
                 self.limit,
                 song_name=song_name
             )
+            print("Inserting " + song_name + " in database")
             sid = self.db.insert_song(song_name, file_hash, audio_length)
 
             self.db.insert_hashes(sid, hashes)
             self.db.set_song_fingerprinted(sid)
             self.get_fingerprinted_songs()
+            print(song_name + " inserted in database")
 
     def find_matches(self, samples, Fs=fingerprint.DEFAULT_FS):
         hashes = fingerprint.fingerprint(samples, Fs=Fs)
-        return self.db.return_matches(hashes)
+        mapper = {}
+        total_hashes = 0
+        for hash, offset in hashes:
+            mapper[hash.upper()[:fingerprint.FINGERPRINT_REDUCTION]] = offset
+            total_hashes += 1
+        return (self.db.return_matches(mapper), total_hashes)
 
-    def align_matches(self, matches):
+    def align_matches(self, matches, total_hashes):
         """
             Finds hash matches that align in time with other matches and finds
             consensus about which hashes are "true" signal from the audio.
@@ -160,7 +169,7 @@ class Dejavu(object):
             Dejavu.SONG_NAME : songname,
             Dejavu.CONFIDENCE : largest_count,
             Dejavu.AUDIO_LENGTH : song.get(Database.AUDIO_LENGTH, None),
-            Dejavu.RELATIVE_CONFIDENCE : (largest_count*100)/float(len(matches)),
+            Dejavu.RELATIVE_CONFIDENCE : (largest_count*100)/float(total_hashes),
             Dejavu.OFFSET : int(largest),
             Dejavu.OFFSET_SECS : nseconds,
             Database.FIELD_FILE_SHA1 : song.get(Database.FIELD_FILE_SHA1, None),}

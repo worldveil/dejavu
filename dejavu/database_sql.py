@@ -1,12 +1,15 @@
 from __future__ import absolute_import
 from itertools import izip_longest
 import Queue
+import math
 
 import MySQLdb as mysql
 from MySQLdb.cursors import DictCursor
 
 from dejavu.database import Database
+from dejavu.fingerprint import FINGERPRINT_REDUCTION
 
+from itertools import chain
 
 class SQLDatabase(Database):
     """
@@ -56,14 +59,14 @@ class SQLDatabase(Database):
     # creates
     CREATE_FINGERPRINTS_TABLE = """
         CREATE TABLE IF NOT EXISTS `%s` (
-             `%s` binary(10) not null,
+             `%s` binary (%s) not null,
              `%s` mediumint unsigned not null,
              `%s` int unsigned not null,
          INDEX (%s),
          UNIQUE KEY `unique_constraint` (%s, %s, %s),
          FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE CASCADE
     ) ENGINE=INNODB;""" % (
-        FINGERPRINTS_TABLENAME, Database.FIELD_HASH,
+        FINGERPRINTS_TABLENAME, Database.FIELD_HASH, str(math.ceil(FINGERPRINT_REDUCTION/2.)),
         Database.FIELD_SONG_ID, Database.FIELD_OFFSET, Database.FIELD_HASH,
         Database.FIELD_SONG_ID, Database.FIELD_OFFSET, Database.FIELD_HASH,
         Database.FIELD_SONG_ID, SONGS_TABLENAME, Database.FIELD_SONG_ID
@@ -273,34 +276,38 @@ class SQLDatabase(Database):
         for hash, offset in hashes:
             values.append((hash, sid, offset))
 
+        base_query = "INSERT IGNORE INTO fingerprints (%s, %s, %s) values " % (Database.FIELD_HASH, Database.FIELD_SONG_ID, Database.FIELD_OFFSET)
         with self.cursor() as cur:
+            values.sort(key=lambda tup: tup[0])
+            cur.execute("START TRANSACTION;")
             for split_values in grouper(values, 1000):
-                cur.executemany(self.INSERT_FINGERPRINT, split_values)
+                values2tuple = tuple(chain.from_iterable(split_values))
+                query = base_query + ', '.join(['(UNHEX(%s), %s, %s)'] * len(split_values))
+                query += ";"
+                cur.execute(query, values2tuple)
+            cur.execute("COMMIT;")
 
-    def return_matches(self, hashes):
+
+    def return_matches(self, mapper):
         """
         Return the (song_id, offset_diff) tuples associated with
         a list of (sha1, sample_offset) values.
         """
         # Create a dictionary of hash => offset pairs for later lookups
-        mapper = {}
-        for hash, offset in hashes:
-            mapper[hash.upper()] = offset
 
         # Get an iteratable of all the hashes we need
         values = mapper.keys()
 
         with self.cursor() as cur:
-            for split_values in grouper(values, 1000):
-                # Create our IN part of the query
-                query = self.SELECT_MULTIPLE
-                query = query % ', '.join(['UNHEX(%s)'] * len(split_values))
+            # Create our IN part of the query
+            query = self.SELECT_MULTIPLE
+            query = query % ', '.join(['UNHEX(%s)'] * len(values))
 
-                cur.execute(query, split_values)
+            cur.execute(query, values)
 
-                for hash, sid, offset in cur:
-                    # (sid, db_offset - song_sampled_offset)
-                    yield (sid, offset - mapper[hash])
+            for hash, sid, offset in cur:
+                # (sid, db_offset - song_sampled_offset)
+                yield (sid, offset - mapper[hash])
 
     def __getstate__(self):
         return (self._options,)
@@ -334,11 +341,11 @@ class Cursor(object):
         cur.execute(query)
     ```
     """
-    _cache = Queue.Queue(maxsize=5)
 
     def __init__(self, cursor_type=mysql.cursors.Cursor, **options):
         super(Cursor, self).__init__()
 
+        self._cache = Queue.Queue(maxsize=5)
         try:
             conn = self._cache.get_nowait()
         except Queue.Empty:
