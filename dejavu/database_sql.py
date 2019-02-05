@@ -9,6 +9,7 @@ from MySQLdb.cursors import DictCursor
 from dejavu.database import Database
 from dejavu.fingerprint import FINGERPRINT_REDUCTION
 
+from itertools import chain
 
 class SQLDatabase(Database):
     """
@@ -275,9 +276,17 @@ class SQLDatabase(Database):
         for hash, offset in hashes:
             values.append((hash, sid, offset))
 
+        base_query = "INSERT IGNORE INTO fingerprints (%s, %s, %s) values " % (Database.FIELD_HASH, Database.FIELD_SONG_ID, Database.FIELD_OFFSET)
         with self.cursor() as cur:
+            values.sort(key=lambda tup: tup[0])
+            cur.execute("START TRANSACTION;")
             for split_values in grouper(values, 1000):
-                cur.executemany(self.INSERT_FINGERPRINT, split_values)
+                values2tuple = tuple(chain.from_iterable(split_values))
+                query = base_query + ', '.join(['(UNHEX(%s), %s, %s)'] * len(split_values))
+                query += ";"
+                cur.execute(query, values2tuple)
+            cur.execute("COMMIT;")
+
 
     def return_matches(self, mapper):
         """

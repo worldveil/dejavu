@@ -86,12 +86,14 @@ class Dejavu(object):
                 # Print traceback because we can't reraise it here
                 traceback.print_exc(file=sys.stdout)
             else:
+                print("Inserting " + song_name + " in database")
                 sid = self.db.insert_song(song_name, file_hash, audio_length)
 
                 self.db.insert_hashes(sid, hashes)
                 self.db.set_song_fingerprinted(sid)
                 self.get_fingerprinted_songs()
 
+                print(song_name + " inserted in database")
         pool.close()
         pool.join()
 
@@ -108,11 +110,13 @@ class Dejavu(object):
                 self.limit,
                 song_name=song_name
             )
+            print("Inserting " + song_name + " in database")
             sid = self.db.insert_song(song_name, file_hash, audio_length)
 
             self.db.insert_hashes(sid, hashes)
             self.db.set_song_fingerprinted(sid)
             self.get_fingerprinted_songs()
+            print(song_name + " inserted in database")
 
     def find_matches(self, samples, Fs=fingerprint.DEFAULT_FS):
         hashes = fingerprint.fingerprint(samples, Fs=Fs)
