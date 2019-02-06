@@ -5,3 +5,6 @@ mp3
 *.mp3
 .DS_Store
 *.cnf
+build/
+.idea/
+PyDejavu.egg-info/
