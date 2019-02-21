@@ -61,6 +61,7 @@ PEAK_SORT = True
 # potentially higher collisions and misclassifications when identifying songs.
 FINGERPRINT_REDUCTION = 20
 
+
 def fingerprint(channel_samples, Fs=DEFAULT_FS,
                 wsize=DEFAULT_WINDOW_SIZE,
                 wratio=DEFAULT_OVERLAP_RATIO,
@@ -78,14 +79,9 @@ def fingerprint(channel_samples, Fs=DEFAULT_FS,
         window=mlab.window_hanning,
         noverlap=int(wsize * wratio))[0]
 
-    print("HELLO - 1")
-
     # apply log transform since specgram() returns linear array
-    try:
-        arr2D = 10 * np.log10(arr2D)
-        arr2D[arr2D == -np.inf] = 0  # replace infs with zeros
-    except TypeError as e:
-        print('damn 1..{}'.format(e))
+    arr2D = 10 * np.log10(arr2D)
+    arr2D[arr2D == -np.inf] = 0  # replace infs with zeros
 
     # find local maxima
     local_maxima = get_2D_peaks(arr2D, plot=False, amp_min=amp_min)
@@ -95,33 +91,22 @@ def fingerprint(channel_samples, Fs=DEFAULT_FS,
 
 
 def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
-    print("HELLO - 2")
-
     # http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.morphology.iterate_structure.html#scipy.ndimage.morphology.iterate_structure
     struct = generate_binary_structure(2, 1)
-    print("HELLO - 2a")
     neighborhood = iterate_structure(struct, PEAK_NEIGHBORHOOD_SIZE)
 
-    print("HELLO - 2b")
     # find local maxima using our fliter shape
     local_max = maximum_filter(arr2D, footprint=neighborhood) == arr2D
-    print("HELLO - 2c")
     background = (arr2D == 0)
     eroded_background = binary_erosion(background, structure=neighborhood,
                                        border_value=1)
 
-    print("HELLO - 2d")
     # Boolean mask of arr2D with True at peaks
     detected_peaks = local_max ^ eroded_background
 
-    print("HELLO - 2e")
     # extract peaks
     amps = arr2D[detected_peaks]
-    print("HELLO - 2f")
-    try:
-        j, i = np.where(detected_peaks)
-    except TypeError as e:
-        print("damn 2....{}".format(e))
+    j, i = np.where(detected_peaks)
 
     # filter peaks
     amps = amps.flatten()
@@ -147,7 +132,6 @@ def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
 
 
 def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
-    print("HELLO - 3")
     """
     Hash list structure:
        sha1_hash[0:20]    time_offset
@@ -159,7 +143,7 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
     for i in range(len(peaks)):
         for j in range(1, fan_value):
             if (i + j) < len(peaks):
-                
+
                 freq1 = peaks[i][IDX_FREQ_I]
                 freq2 = peaks[i + j][IDX_FREQ_I]
                 t1 = peaks[i][IDX_TIME_J]
