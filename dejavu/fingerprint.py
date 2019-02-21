@@ -79,8 +79,8 @@ def fingerprint(channel_samples, Fs=DEFAULT_FS,
         noverlap=int(wsize * wratio))[0]
 
     # apply log transform since specgram() returns linear array
-    arr2D = 10 * np.log10(arr2D)
     try:
+        arr2D = 10 * np.log10(arr2D)
         arr2D[arr2D == -np.inf] = 0  # replace infs with zeros
     except TypeError as e:
         print('damn 1..{}'.format(e))
