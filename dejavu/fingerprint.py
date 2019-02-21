@@ -78,6 +78,8 @@ def fingerprint(channel_samples, Fs=DEFAULT_FS,
         window=mlab.window_hanning,
         noverlap=int(wsize * wratio))[0]
 
+    print("HELLO - 1")
+
     # apply log transform since specgram() returns linear array
     try:
         arr2D = 10 * np.log10(arr2D)
@@ -93,6 +95,8 @@ def fingerprint(channel_samples, Fs=DEFAULT_FS,
 
 
 def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
+    print("HELLO - 2")
+
     # http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.morphology.iterate_structure.html#scipy.ndimage.morphology.iterate_structure
     struct = generate_binary_structure(2, 1)
     neighborhood = iterate_structure(struct, PEAK_NEIGHBORHOOD_SIZE)
@@ -137,6 +141,7 @@ def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
 
 
 def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
+    print("HELLO - 3")
     """
     Hash list structure:
        sha1_hash[0:20]    time_offset

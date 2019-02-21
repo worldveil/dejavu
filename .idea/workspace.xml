@@ -2,8 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="05214ffd-adad-42f9-9fbb-8e8410694a99" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/dejavu/decoder.py" beforeDir="false" afterPath="$PROJECT_DIR$/dejavu/decoder.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dejavu/wavio.py" beforeDir="false" afterPath="$PROJECT_DIR$/dejavu/wavio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dejavu/fingerprint.py" beforeDir="false" afterPath="$PROJECT_DIR$/dejavu/fingerprint.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -73,7 +72,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/dejavu/decoder.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="157">
+            <state relative-caret-position="825">
               <caret line="55" column="18" selection-start-line="55" selection-start-column="15" selection-end-line="55" selection-end-column="18" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
@@ -82,11 +81,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/dejavu/wavio.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="443">
-              <caret line="126" column="39" selection-start-line="126" selection-start-column="39" selection-end-line="126" selection-end-column="39" />
+            <state relative-caret-position="353">
+              <caret line="120" column="36" lean-forward="true" selection-start-line="120" selection-start-column="36" selection-end-line="120" selection-end-column="36" />
               <folding>
                 <element signature="e#222#242#0" expanded="true" />
               </folding>
@@ -94,11 +93,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/dejavu/fingerprint.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="157">
-              <caret line="111" column="18" selection-start-line="111" selection-start-column="15" selection-end-line="111" selection-end-column="18" />
+            <state relative-caret-position="368">
+              <caret line="143" column="20" selection-start-line="143" selection-start-column="20" selection-end-line="143" selection-end-column="20" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -139,8 +138,8 @@
       <find>astype</find>
       <find>limit</find>
       <find>this is</find>
-      <find>np.</find>
       <find>_np</find>
+      <find>np.</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -151,9 +150,9 @@
       <list>
         <option value="$PROJECT_DIR$/dejavu/__init__.py" />
         <option value="$PROJECT_DIR$/example.py" />
-        <option value="$PROJECT_DIR$/dejavu/fingerprint.py" />
         <option value="$PROJECT_DIR$/dejavu/decoder.py" />
         <option value="$PROJECT_DIR$/dejavu/wavio.py" />
+        <option value="$PROJECT_DIR$/dejavu/fingerprint.py" />
       </list>
     </option>
   </component>
@@ -281,7 +280,7 @@
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.32894737" />
-      <window_info anchor="bottom" id="Debug" order="3" visible="true" weight="0.3991228" />
+      <window_info anchor="bottom" id="Debug" order="3" visible="true" weight="0.0372807" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -368,16 +367,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/dejavu/fingerprint.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="157">
-          <caret line="111" column="18" selection-start-line="111" selection-start-column="15" selection-end-line="111" selection-end-column="18" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/dejavu/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
         <state>
@@ -405,9 +394,19 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/dejavu/wavio.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="353">
+          <caret line="120" column="36" lean-forward="true" selection-start-line="120" selection-start-column="36" selection-end-line="120" selection-end-column="36" />
+          <folding>
+            <element signature="e#222#242#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/dejavu/decoder.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="157">
+        <state relative-caret-position="825">
           <caret line="55" column="18" selection-start-line="55" selection-start-column="15" selection-end-line="55" selection-end-column="18" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
@@ -415,12 +414,12 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/dejavu/wavio.py">
+    <entry file="file://$PROJECT_DIR$/dejavu/fingerprint.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="443">
-          <caret line="126" column="39" selection-start-line="126" selection-start-column="39" selection-end-line="126" selection-end-column="39" />
+        <state relative-caret-position="368">
+          <caret line="143" column="20" selection-start-line="143" selection-start-column="20" selection-end-line="143" selection-end-column="20" />
           <folding>
-            <element signature="e#222#242#0" expanded="true" />
+            <element signature="e#0#18#0" expanded="true" />
           </folding>
         </state>
       </provider>
