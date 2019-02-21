@@ -96,8 +96,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/dejavu/fingerprint.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="360">
-              <caret line="108" lean-forward="true" selection-start-line="108" selection-end-line="110" selection-end-column="62" />
+            <state relative-caret-position="195">
+              <caret line="97" column="22" selection-start-line="97" selection-start-column="22" selection-end-line="97" selection-end-column="22" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -416,8 +416,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/dejavu/fingerprint.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="360">
-          <caret line="108" lean-forward="true" selection-start-line="108" selection-end-line="110" selection-end-column="62" />
+        <state relative-caret-position="195">
+          <caret line="97" column="22" selection-start-line="97" selection-start-column="22" selection-end-line="97" selection-end-column="22" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
