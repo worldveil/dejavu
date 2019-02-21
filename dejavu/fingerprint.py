@@ -83,7 +83,7 @@ def fingerprint(channel_samples, Fs=DEFAULT_FS,
     try:
         arr2D[arr2D == -np.inf] = 0  # replace infs with zeros
     except TypeError as e:
-        print('damn...{}'.format(e))
+        print('damn 1..{}'.format(e))
 
     # find local maxima
     local_maxima = get_2D_peaks(arr2D, plot=False, amp_min=amp_min)
@@ -108,7 +108,10 @@ def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
 
     # extract peaks
     amps = arr2D[detected_peaks]
-    j, i = np.where(detected_peaks)
+    try:
+        j, i = np.where(detected_peaks)
+    except TypeError as e:
+        print("damn 2....{}".format(e))
 
     # filter peaks
     amps = amps.flatten()
