@@ -112,7 +112,7 @@ def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
 
     print("HELLO - 2d")
     # Boolean mask of arr2D with True at peaks
-    detected_peaks = np.subtract(local_max, eroded_background)
+    detected_peaks = local_max ^ eroded_background
 
     print("HELLO - 2e")
     # extract peaks
