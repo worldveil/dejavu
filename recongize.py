@@ -43,7 +43,7 @@ if __name__ == '__main__':
 	# create a Dejavu instance
 	djv = Dejavu(config)
 
-	local_downloaded_foler = "~/mp3_downloaded_recongize"
+	local_downloaded_foler = "mp3_downloaded_recongize"
 	# Recognize audio from a file
 
 	all_songs_to_be_recongized = download_files(local_downloaded_foler)
