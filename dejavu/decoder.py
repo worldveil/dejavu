@@ -60,7 +60,7 @@ def read(filename, limit=None):
             channels.append(data[chn::audiofile.channels])
 
         fs = audiofile.frame_rate
-    except (audioop.error, TypeError) as e:
+    except audioop.error:
         fs, _, audiofile = wavio.readwav(filename)
 
         if limit:
@@ -72,8 +72,6 @@ def read(filename, limit=None):
         channels = []
         for chn in audiofile:
             channels.append(chn)
-
-        print('dew 3...{}'.format(e))
 
     return channels, audiofile.frame_rate, unique_hash(filename)
 
