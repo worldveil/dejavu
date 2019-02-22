@@ -294,7 +294,7 @@ class SQLDatabase(Database):
                 # Create our IN part of the query
                 query = self.SELECT_MULTIPLE
                 query = query % ', '.join(['UNHEX(%s)'] * len(split_values))
-
+                print('query: {}'.format(query))
                 cur.execute(query, split_values)
 
                 for hash, sid, offset in cur:
