@@ -1,8 +1,8 @@
 {
     "database": {
-        "host": "127.0.0.1",
+        "host": "ken-hack.cdkisetppzw3.us-east-1.rds.amazonaws.com",
         "user": "root",
-        "passwd": "", 
+        "passwd": "kenwu1234",
         "db": "dejavu"
     }
 }
