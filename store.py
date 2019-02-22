@@ -15,29 +15,23 @@ with open("dejavu.cnf.SAMPLE") as f:
 def pre_download_all_files_from_s3(local_downloaded_foler):
 	import os
 	import boto3
-	import botocore
 	client = boto3.client('s3')
-
-	HACK_S3_BUCKET = os.environ('HACK_S3_BUCKET')
-
+	HACK_S3_BUCKET = os.environ['HACK_S3_BUCKET']
 	paginator = client.get_paginator('list_objects_v2')
 	result = paginator.paginate(Bucket=HACK_S3_BUCKET, StartAfter='2018')
-
 	if not os.path.exists(local_downloaded_foler):
 		print("Creating local directory...{}".format(local_downloaded_foler))
 		os.makedirs(local_downloaded_foler)
-
+	s3 = boto3.resource('s3')
 	for page in result:
 		if "Contents" in page:
 			for key in page["Contents"]:
 				keyString = key["Key"]
+				print('downloading...{}'.format(keyString))
 				try:
-					client.Bucket(HACK_S3_BUCKET).download_file(keyString, local_downloaded_foler + "/" + keyString)
-				except botocore.exceptions.ClientError as e:
-					if e.response['Error']['Code'] == "404":
-						print("The object does not exist.")
-					else:
-						print("failed....")
+					s3.Bucket(HACK_S3_BUCKET).download_file(keyString, "mp3_downloaded/" + keyString)
+				except Exception as e:
+					print("failed....{}".format(e))
 
 
 if __name__ == '__main__':
