@@ -31,7 +31,7 @@ def download_files(local_downloaded_foler):
 		if "Contents" in page:
 			for key in page["Contents"]:
 				keyString = key["Key"]
-				print('downloading...{}'.format(local_downloaded_foler + "/" + keyString))
+				#print('downloading...{}'.format(local_downloaded_foler + "/" + keyString))
 				try:
 					s3.Bucket(HACK_S3_BUCKET_RECONGIZE).download_file(keyString, local_downloaded_foler + "/" + keyString)
 					output.append(keyString)
