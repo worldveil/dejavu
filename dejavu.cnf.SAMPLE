@@ -3,7 +3,7 @@
         "host": "ken-hack.cdkisetppzw3.us-east-1.rds.amazonaws.com",
         "user": "ken_hack",
         "passwd": "kenwu1234",
-        "port": "3306",
+        "port": 3306,
         "db": "dejavu"
     }
 }
