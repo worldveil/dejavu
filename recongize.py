@@ -1,5 +1,6 @@
 # To run:
 #   export HACK_S3_BUCKET_RECONGIZE=ken-hack-recongize
+#   export HACK_S3_PREFIX_RECONGIZE=demo1
 
 import warnings
 import json
@@ -17,18 +18,20 @@ def download_files(local_downloaded_foler):
 	import boto3
 	client = boto3.client('s3')
 	HACK_S3_BUCKET_RECONGIZE = os.environ['HACK_S3_BUCKET_RECONGIZE']
+	HACK_S3_PREFIX_RECONGIZE = os.environ['HACK_S3_PREFIX_RECONGIZE']
 	paginator = client.get_paginator('list_objects_v2')
-	result = paginator.paginate(Bucket=HACK_S3_BUCKET_RECONGIZE, StartAfter='2018')
-	if not os.path.exists(local_downloaded_foler):
-		print("Creating local directory...{}".format(local_downloaded_foler))
-		os.makedirs(local_downloaded_foler)
+	result = paginator.paginate(Bucket=HACK_S3_BUCKET_RECONGIZE, Prefix=HACK_S3_PREFIX_RECONGIZE, StartAfter='2018')
+	local_downloaded_foler_joined = os.path.join(local_downloaded_foler, HACK_S3_PREFIX_RECONGIZE)
+	if not os.path.exists(local_downloaded_foler_joined):
+		print("Creating local directory...{}".format(local_downloaded_foler_joined))
+		os.makedirs(local_downloaded_foler_joined)
 	s3 = boto3.resource('s3')
 	output = []
 	for page in result:
 		if "Contents" in page:
 			for key in page["Contents"]:
 				keyString = key["Key"]
-				print('downloading...{}'.format(keyString))
+				print('downloading...{}'.format(local_downloaded_foler + "/" + keyString))
 				try:
 					s3.Bucket(HACK_S3_BUCKET_RECONGIZE).download_file(keyString, local_downloaded_foler + "/" + keyString)
 					output.append(keyString)
