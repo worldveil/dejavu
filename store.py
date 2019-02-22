@@ -29,7 +29,7 @@ def pre_download_all_files_from_s3(local_downloaded_foler):
 				keyString = key["Key"]
 				print('downloading...{}'.format(keyString))
 				try:
-					s3.Bucket(HACK_S3_BUCKET).download_file(keyString, "mp3_downloaded/" + keyString)
+					s3.Bucket(HACK_S3_BUCKET).download_file(keyString, local_downloaded_foler + "/" + keyString)
 				except Exception as e:
 					print("failed....{}".format(e))
 
