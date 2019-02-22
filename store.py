@@ -15,8 +15,11 @@ def download_all_files_from_s3_and_fingerprint(local_downloaded_foler):
 	with open("dejavu.cnf.SAMPLE") as f:
 		config = json.load(f)
 
+	print("doing 1")
 	# create a Dejavu instance
 	djv = Dejavu(config)
+
+	print("doing 2")
 
 	import os
 	import boto3
