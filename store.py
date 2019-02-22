@@ -1,5 +1,7 @@
 # To run:
 #   export HACK_S3_BUCKET=ken-hack
+#   export HACK_S3_BUCKET=ihr-de-stg-nonprod
+#   export HACK_S3_PREFIX=hackday_2019
 
 import warnings
 import json
@@ -17,8 +19,9 @@ def pre_download_all_files_from_s3(local_downloaded_foler):
 	import boto3
 	client = boto3.client('s3')
 	HACK_S3_BUCKET = os.environ['HACK_S3_BUCKET']
+	HACK_S3_PREFIX = os.environ['HACK_S3_PREFIX']
 	paginator = client.get_paginator('list_objects_v2')
-	result = paginator.paginate(Bucket=HACK_S3_BUCKET, StartAfter='2018')
+	result = paginator.paginate(Bucket=HACK_S3_BUCKET, Prefix=HACK_S3_PREFIX, StartAfter='2018')
 	if not os.path.exists(local_downloaded_foler):
 		print("Creating local directory...{}".format(local_downloaded_foler))
 		os.makedirs(local_downloaded_foler)
