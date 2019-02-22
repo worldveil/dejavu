@@ -22,10 +22,10 @@ def pre_download_all_files_from_s3(local_downloaded_foler):
 	HACK_S3_PREFIX = os.environ['HACK_S3_PREFIX']
 	paginator = client.get_paginator('list_objects_v2')
 	result = paginator.paginate(Bucket=HACK_S3_BUCKET, Prefix=HACK_S3_PREFIX, StartAfter='2018')
-	local_downloaded_foler = os.path.join(local_downloaded_foler, HACK_S3_PREFIX)
-	if not os.path.exists(local_downloaded_foler):
-		print("Creating local directory...{}".format(local_downloaded_foler))
-		os.makedirs(local_downloaded_foler)
+	local_downloaded_foler_joined = os.path.join(local_downloaded_foler, HACK_S3_PREFIX)
+	if not os.path.exists(local_downloaded_foler_joined):
+		print("Creating local directory...{}".format(local_downloaded_foler_joined))
+		os.makedirs(local_downloaded_foler_joined)
 	s3 = boto3.resource('s3')
 	for page in result:
 		if "Contents" in page:
@@ -34,6 +34,7 @@ def pre_download_all_files_from_s3(local_downloaded_foler):
 				print('downloading...{}'.format(keyString))
 				try:
 					s3.Bucket(HACK_S3_BUCKET).download_file(keyString, local_downloaded_foler + "/" + keyString)
+					break
 				except Exception as e:
 					print("failed....{}".format(e))
 
