@@ -31,7 +31,7 @@ def download_files(local_downloaded_foler):
 		if "Contents" in page:
 			for key in page["Contents"]:
 				keyString = key["Key"]
-				#print('downloading...{}'.format(local_downloaded_foler + "/" + keyString))
+				print('downloading...{}'.format(local_downloaded_foler + "/" + keyString))
 				try:
 					s3.Bucket(HACK_S3_BUCKET_RECONGIZE).download_file(keyString, local_downloaded_foler + "/" + keyString)
 					output.append(keyString)
@@ -49,8 +49,8 @@ if __name__ == '__main__':
 	all_songs_to_be_recongized = download_files(local_downloaded_foler)
 	for song_name in all_songs_to_be_recongized:
 		print("song_name to be regonized: {}".format(song_name))
-		song = djv.recognize(FileRecognizer, local_downloaded_foler + "/" + song_name)
-		print "For song: {}, From file we recognized: {} \n".format(song_name, song)
+		# song = djv.recognize(FileRecognizer, local_downloaded_foler + "/" + song_name)
+		# print "For song: {}, From file we recognized: {} \n".format(song_name, song)
 
 	# Or recognize audio from your microphone for `secs` seconds
 	# secs = 5
