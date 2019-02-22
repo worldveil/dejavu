@@ -48,6 +48,7 @@ if __name__ == '__main__':
 
 	all_songs_to_be_recongized = download_files(local_downloaded_foler)
 	for song_name in all_songs_to_be_recongized:
+		print("song_name to be regonized: {}".format(song_name))
 		song = djv.recognize(FileRecognizer, local_downloaded_foler + "/" + song_name)
 		print "For song: {}, From file we recognized: {} \n".format(song_name, song)
 
