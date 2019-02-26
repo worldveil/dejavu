@@ -59,7 +59,7 @@ PEAK_SORT = True
 # Number of bits to throw away from the front of the SHA1 hash in the
 # fingerprint calculation. The more you throw away, the less storage, but
 # potentially higher collisions and misclassifications when identifying songs.
-FINGERPRINT_REDUCTION = 20
+FINGERPRINT_REDUCTION = 40
 
 # SHA1 has 40 hexadecimal chars to encode
 FINGERPRINT_REDUCTION = (40 if FINGERPRINT_REDUCTION > 40 else FINGERPRINT_REDUCTION)
