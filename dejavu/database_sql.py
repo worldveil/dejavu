@@ -3,8 +3,6 @@ from itertools import izip_longest
 import Queue
 import math
 
-# import MySQLdb as mysql
-# from MySQLdb.cursors import DictCursor
 import pymysql as mysql
 from pymysql.cursors import DictCursor
 

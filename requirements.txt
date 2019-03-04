@@ -6,5 +6,6 @@ PyAudio>=0.2.7
 numpy==1.13.3
 scipy==1.0.0
 matplotlib==2.1.2
+pymysql==0.9.3
 ### END ###
 
