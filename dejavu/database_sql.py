@@ -3,11 +3,15 @@ from itertools import izip_longest
 import Queue
 import math
 
-import MySQLdb as mysql
-from MySQLdb.cursors import DictCursor
+# import MySQLdb as mysql
+# from MySQLdb.cursors import DictCursor
+import pymysql as mysql
+from pymysql.cursors import DictCursor
 
 from dejavu.database import Database
 from dejavu.fingerprint import FINGERPRINT_REDUCTION
+
+from multiprocessing import cpu_count
 
 from itertools import chain
 
@@ -345,7 +349,7 @@ class Cursor(object):
     def __init__(self, cursor_type=mysql.cursors.Cursor, **options):
         super(Cursor, self).__init__()
 
-        self._cache = Queue.Queue(maxsize=5)
+        self._cache = Queue.Queue(maxsize=cpu_count())
         try:
             conn = self._cache.get_nowait()
         except Queue.Empty:
@@ -360,7 +364,7 @@ class Cursor(object):
 
     @classmethod
     def clear_cache(cls):
-        cls._cache = Queue.Queue(maxsize=5)
+        cls._cache = Queue.Queue(maxsize=cpu_count())
 
     def __enter__(self):
         self.cursor = self.conn.cursor(self.cursor_type)

@@ -4,7 +4,7 @@
 pydub>=0.9.4
 PyAudio>=0.2.7
 numpy==1.13.3
-scipy>=0.12.1
+scipy==1.0.0
 matplotlib==2.1.2
 ### END ###
 
