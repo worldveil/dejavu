@@ -111,5 +111,21 @@ class MicrophoneRecognizer(BaseRecognizer):
         return self.recognize_recording()
 
 
+class NumpyArrayRecognizer(BaseRecognizer):
+    def __init__(self, dejavu):
+        super(NumpyArrayRecognizer, self).__init__(dejavu)
+
+    def recognize_array(self, frames):
+        t = time.time()
+        match = self._recognize(*frames)
+        t = time.time() - t
+        if match:
+            match['match_time'] = t
+        return match
+
+    def recognize(self, data):
+        return self.recognize_array(data)
+
+
 class NoRecordingError(Exception):
     pass
