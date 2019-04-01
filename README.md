@@ -27,7 +27,7 @@ Now you're ready to start fingerprinting your audio collection!
 ## Quickstart
 
 ```bash
-$ git clone https://github.com/worldveil/dejavu.git ./dejavu
+$ git clone https://github.com/datawookie/dejavu.git ./dejavu
 $ cd dejavu
 $ python example.py
 ```
