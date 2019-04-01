@@ -24,7 +24,16 @@ Second, you'll need to create a MySQL database where Dejavu can store fingerprin
 
 Now you're ready to start fingerprinting your audio collection! 
 
+Dependency on MySQL is unfortunate. Might be better to go with SQLite to make this more portable.
+
 ## Quickstart
+
+```bash
+$ sudo apt install portaudio19-dev
+$ sudo apt install python3-tk
+```
+
+The latter dependency seems unnecessary. Should clean that up!
 
 ```bash
 $ git clone https://github.com/datawookie/dejavu.git ./dejavu
