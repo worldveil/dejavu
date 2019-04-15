@@ -4,5 +4,8 @@ mp3
 *.wav
 *.mp3
 .DS_Store
+*.swp
 *.cnf
 .idea/
+audio_print_data.sqlite3
+results/

@@ -214,6 +214,8 @@ class DejavuTest(object):
             result = subprocess.check_output([
                 "python", 
                 "dejavu.py",
+                '-c',
+                'dejavu.cnf',
                 '-r',
                 'file', 
                 self.test_folder + "/" + f])
