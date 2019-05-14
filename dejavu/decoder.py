@@ -3,8 +3,12 @@ import fnmatch
 import numpy as np
 from pydub import AudioSegment
 from pydub.utils import audioop
-import wavio
+import dejavu.wavio as wavio
 from hashlib import sha1
+from sys import version
+
+if int(version[0]) > 2:
+    xrange = range
 
 def unique_hash(filepath, blocksize=2**20):
     """ Small function to generate a hash to uniquely generate

@@ -1,6 +1,11 @@
 from __future__ import absolute_import
-from itertools import izip_longest
-import Queue
+
+try:
+    import queue
+    from itertools import zip_longest
+except ImportError:
+    import Queue as queue
+    from itertools import izip_longest as zip_longest
 import math
 
 import pymysql as mysql
@@ -283,6 +288,7 @@ class SQLDatabase(Database):
             values.sort(key=lambda tup: tup[0])
             cur.execute("START TRANSACTION;")
             for split_values in grouper(values, 1000):
+                split_values = list(split_values)
                 values2tuple = tuple(chain.from_iterable(split_values))
                 query = base_query + ', '.join(['(UNHEX(%s), %s, %s)'] * len(split_values))
                 query += ";"
@@ -298,7 +304,7 @@ class SQLDatabase(Database):
         # Create a dictionary of hash => offset pairs for later lookups
 
         # Get an iteratable of all the hashes we need
-        values = mapper.keys()
+        values = list(mapper.keys())
 
         with self.cursor() as cur:
             # Create our IN part of the query
@@ -322,7 +328,7 @@ class SQLDatabase(Database):
 def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
     return (filter(None, values) for values
-            in izip_longest(fillvalue=fillvalue, *args))
+            in zip_longest(fillvalue=fillvalue, *args))
 
 
 def cursor_factory(**factory_options):
@@ -347,10 +353,10 @@ class Cursor(object):
     def __init__(self, cursor_type=mysql.cursors.Cursor, **options):
         super(Cursor, self).__init__()
 
-        self._cache = Queue.Queue(maxsize=cpu_count())
+        self._cache = queue.Queue(maxsize=cpu_count())
         try:
             conn = self._cache.get_nowait()
-        except Queue.Empty:
+        except queue.Empty:
             conn = mysql.connect(**options)
         else:
             # Ping the connection before using it from the cache.
@@ -362,7 +368,7 @@ class Cursor(object):
 
     @classmethod
     def clear_cache(cls):
-        cls._cache = Queue.Queue(maxsize=cpu_count())
+        cls._cache = queue.Queue(maxsize=cpu_count())
 
     def __enter__(self):
         self.cursor = self.conn.cursor(self.cursor_type)
@@ -379,5 +385,5 @@ class Cursor(object):
         # Put it back on the queue
         try:
             self._cache.put_nowait(self.conn)
-        except Queue.Full:
+        except queue.Full:
             self.conn.close()

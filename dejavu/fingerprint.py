@@ -104,7 +104,7 @@ def get_2D_peaks(arr2D, amp_min=DEFAULT_AMP_MIN):
                                        border_value=1)
 
     # Boolean mask of arr2D with True at peaks
-    detected_peaks = local_max - eroded_background
+    detected_peaks = local_max ^ eroded_background
 
     # extract peaks
     amps = arr2D[detected_peaks]
@@ -128,6 +128,7 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
        sha1_hash[0:20]    time_offset
     [(e05b341a9b77a51fd26, 32), ... ]
     """
+    peaks = list(peaks)
     if PEAK_SORT:
         peaks.sort(key=itemgetter(1))
 
@@ -142,6 +143,6 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
                 t_delta = t2 - t1
 
                 if t_delta >= MIN_HASH_TIME_DELTA and t_delta <= MAX_HASH_TIME_DELTA:
-                    h = hashlib.sha1(
-                        "%s|%s|%s" % (str(freq1), str(freq2), str(t_delta)))
+                    h = hashlib.sha1((
+                        "%s|%s|%s" % (str(freq1), str(freq2), str(t_delta))).encode())
                     yield (h.hexdigest()[0:FINGERPRINT_REDUCTION], t1)
