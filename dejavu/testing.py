@@ -9,6 +9,10 @@ import os, re, ast
 import subprocess
 import random
 import logging
+from sys import version
+
+if int(version[0]) > 2:
+    xrange = range
 
 def set_seed(seed=None):
     """
@@ -37,7 +41,7 @@ def get_length_audio(audiopath, extension):
     try:
         audio = AudioSegment.from_file(audiopath, extension.replace(".", ""))
     except:
-        print "Error in get_length_audio(): %s" % traceback.format_exc()
+        print("Error in get_length_audio(): %s" % traceback.format_exc())
         return None
     return int(len(audio) / 1000.0)
 
@@ -75,8 +79,8 @@ def generate_test_files(src, dest, nseconds, fmts=[".mp3", ".wav"], padding=10):
         testsources = get_files_recursive(src, fmt) 
         for audiosource in testsources:
 
-            print "audiosource:", audiosource
-            
+            print("audiosource:", audiosource)
+
             filename, extension = os.path.splitext(os.path.basename(audiosource))
             length = get_length_audio(audiosource, extension) 
             starttime = get_starttime(length, nseconds, padding)
@@ -96,7 +100,7 @@ def log_msg(msg, log=True, silent=False):
     if log:
         logging.debug(msg)
     if not silent:
-        print msg
+        print(msg)
 
 def autolabel(rects, ax):
     # attach some text labels
@@ -120,26 +124,26 @@ class DejavuTest(object):
         self.test_seconds = seconds
         self.test_songs = []
 
-        print "test_seconds", self.test_seconds
+        print ("test_seconds", self.test_seconds)
 
         self.test_files = [
             f for f in os.listdir(self.test_folder) 
             if os.path.isfile(os.path.join(self.test_folder, f)) 
             and re.findall("[0-9]*sec", f)[0] in self.test_seconds]
 
-        print "test_files", self.test_files
+        print("test_files", self.test_files)
 
         self.n_columns = len(self.test_seconds)
         self.n_lines = int(len(self.test_files) / self.n_columns)
 
-        print "columns:", self.n_columns
-        print "length of test files:", len(self.test_files)
-        print "lines:", self.n_lines
+        print("columns:", self.n_columns)
+        print("length of test files:", len(self.test_files))
+        print("lines:", self.n_lines)
 
         # variable match results (yes, no, invalid)
         self.result_match = [[0 for x in xrange(self.n_columns)] for x in xrange(self.n_lines)] 
 
-        print "result_match matrix:", self.result_match 
+        print("result_match matrix:", self.result_match)
 
         # variable match precision (if matched in the corrected time)
         self.result_matching_times = [[0 for x in xrange(self.n_columns)] for x in xrange(self.n_lines)] 
@@ -164,42 +168,6 @@ class DejavuTest(object):
         self.test_songs.append(song)
         return len(self.test_songs) - 1
 
-    def create_plots(self, name, results, results_folder):
-        for sec in range(0, len(self.test_seconds)):
-            ind = np.arange(self.n_lines) #
-            width = 0.25       # the width of the bars
-
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            ax.set_xlim([-1 * width, 2 * width])
-
-            means_dvj = [x[0] for x in results[sec]]
-            rects1 = ax.bar(ind, means_dvj, width, color='r')
-
-            # add some
-            ax.set_ylabel(name)
-            ax.set_title("%s %s Results" % (self.test_seconds[sec], name)) 
-            ax.set_xticks(ind + width)
-
-            labels = [0 for x in range(0, self.n_lines)]
-            for x in range(0, self.n_lines):
-                labels[x] = "song %s" % (x+1)
-            ax.set_xticklabels(labels)
-
-            box = ax.get_position()
-            ax.set_position([box.x0, box.y0, box.width * 0.75, box.height])
-
-            #ax.legend( (rects1[0]), ('Dejavu'), loc='center left', bbox_to_anchor=(1, 0.5))
-
-            if name == 'Confidence':
-                autolabel(rects1, ax)
-            else:
-                autolabeldoubles(rects1, ax)
-
-            plt.grid()
-
-            fig_name = os.path.join(results_folder, "%s_%s.png" % (name, self.test_seconds[sec]))
-            fig.savefig(fig_name)
 
     def begin(self):
         for f in self.test_files:
@@ -246,7 +214,7 @@ class DejavuTest(object):
                     self.result_match_confidence[line][col] = 0
                 else:
                     log_msg('correct match')
-                    print self.result_match
+                    print(self.result_match)
                     self.result_match[line][col] = 'yes'
                     self.result_query_duration[line][col] = round(result[Dejavu.MATCH_TIME],3)
                     self.result_match_confidence[line][col] = result[Dejavu.CONFIDENCE]
