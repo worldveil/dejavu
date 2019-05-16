@@ -86,7 +86,7 @@ class Dejavu(object):
                 logging.getLogger('dejavu').debug("Inserting " + song_name + " in database")
                 sid = self.db.insert_song(song_name, file_hash, audio_length)
 
-                self.db.insert_hashes(sid, hashes)
+                self.db.insert_hashes(sid, set([(x[0], int(x[1])) for x in hashes]))
                 self.db.set_song_fingerprinted(sid)
                 self.get_fingerprinted_songs()
                 logging.getLogger('dejavu').info(song_name + " inserted in database")
