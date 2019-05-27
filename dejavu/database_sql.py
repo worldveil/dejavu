@@ -333,11 +333,11 @@ class Cursor(object):
         cur.execute(query)
     ```
     """
-    _cache = Queue.Queue(maxsize=5)
 
     def __init__(self, cursor_type=mysql.cursors.Cursor, **options):
         super(Cursor, self).__init__()
 
+        self._cache = Queue.Queue(maxsize=5)
         try:
             conn = self._cache.get_nowait()
         except Queue.Empty:
