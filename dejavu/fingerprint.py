@@ -100,8 +100,8 @@ def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
     eroded_background = binary_erosion(background, structure=neighborhood,
                                        border_value=1)
 
-    # Boolean mask of arr2D with True at peaks
-    detected_peaks = local_max - eroded_background
+    # Boolean mask of arr2D with True at peaks (Fixed deprecated boolean operator by changing '-' to '^')
+    detected_peaks = local_max ^ eroded_background
 
     # extract peaks
     amps = arr2D[detected_peaks]
