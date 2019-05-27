@@ -88,6 +88,7 @@ if __name__ == '__main__':
             song = djv.recognize(MicrophoneRecognizer, seconds=opt_arg)
         elif source == 'file':
             song = djv.recognize(FileRecognizer, opt_arg)
-        print(song)
+        decoded_song = repr(song).decode('string_escape')
+        print(decoded_song)
 
     sys.exit(0)
