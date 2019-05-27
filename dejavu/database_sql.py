@@ -1,12 +1,15 @@
 from __future__ import absolute_import
 from itertools import izip_longest
 import Queue
+import math
 
 import MySQLdb as mysql
 from MySQLdb.cursors import DictCursor
 
 from dejavu.database import Database
+from dejavu.fingerprint import FINGERPRINT_REDUCTION
 
+from itertools import chain
 
 class SQLDatabase(Database):
     """
@@ -56,14 +59,14 @@ class SQLDatabase(Database):
     # creates
     CREATE_FINGERPRINTS_TABLE = """
         CREATE TABLE IF NOT EXISTS `%s` (
-             `%s` binary(10) not null,
+             `%s` binary (%s) not null,
              `%s` mediumint unsigned not null,
              `%s` int unsigned not null,
          INDEX (%s),
          UNIQUE KEY `unique_constraint` (%s, %s, %s),
          FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE CASCADE
     ) ENGINE=INNODB;""" % (
-        FINGERPRINTS_TABLENAME, Database.FIELD_HASH,
+        FINGERPRINTS_TABLENAME, Database.FIELD_HASH, str(math.ceil(FINGERPRINT_REDUCTION/2.)),
         Database.FIELD_SONG_ID, Database.FIELD_OFFSET, Database.FIELD_HASH,
         Database.FIELD_SONG_ID, Database.FIELD_OFFSET, Database.FIELD_HASH,
         Database.FIELD_SONG_ID, SONGS_TABLENAME, Database.FIELD_SONG_ID
@@ -75,11 +78,12 @@ class SQLDatabase(Database):
             `%s` varchar(250) not null,
             `%s` tinyint default 0,
             `%s` binary(20) not null,
+            `%s` float,
         PRIMARY KEY (`%s`),
         UNIQUE KEY `%s` (`%s`)
     ) ENGINE=INNODB;""" % (
         SONGS_TABLENAME, Database.FIELD_SONG_ID, Database.FIELD_SONGNAME, FIELD_FINGERPRINTED,
-        Database.FIELD_FILE_SHA1,
+        Database.FIELD_FILE_SHA1, Database.AUDIO_LENGTH,
         Database.FIELD_SONG_ID, Database.FIELD_SONG_ID, Database.FIELD_SONG_ID,
     )
 
@@ -89,8 +93,8 @@ class SQLDatabase(Database):
             (UNHEX(%%s), %%s, %%s);
     """ % (FINGERPRINTS_TABLENAME, Database.FIELD_HASH, Database.FIELD_SONG_ID, Database.FIELD_OFFSET)
 
-    INSERT_SONG = "INSERT INTO %s (%s, %s) values (%%s, UNHEX(%%s));" % (
-        SONGS_TABLENAME, Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1)
+    INSERT_SONG = "INSERT INTO %s (%s, %s, %s) values (%%s, UNHEX(%%s), %%s);" % (
+        SONGS_TABLENAME, Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1, Database.AUDIO_LENGTH)
 
     # selects
     SELECT = """
@@ -107,8 +111,8 @@ class SQLDatabase(Database):
     """ % (Database.FIELD_SONG_ID, Database.FIELD_OFFSET, FINGERPRINTS_TABLENAME)
 
     SELECT_SONG = """
-        SELECT %s, HEX(%s) as %s FROM %s WHERE %s = %%s;
-    """ % (Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1, Database.FIELD_FILE_SHA1, SONGS_TABLENAME, Database.FIELD_SONG_ID)
+        SELECT %s, HEX(%s) as %s, %s FROM %s WHERE %s = %%s;
+    """ % (Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1, Database.FIELD_FILE_SHA1, Database.AUDIO_LENGTH, SONGS_TABLENAME, Database.FIELD_SONG_ID)
 
     SELECT_NUM_FINGERPRINTS = """
         SELECT COUNT(*) as n FROM %s
@@ -234,12 +238,12 @@ class SQLDatabase(Database):
         with self.cursor(charset="utf8") as cur:
             cur.execute(self.INSERT_FINGERPRINT, (hash, sid, offset))
 
-    def insert_song(self, songname, file_hash):
+    def insert_song(self, songname, file_hash, audio_length):
         """
         Inserts song in the database and returns the ID of the inserted record.
         """
         with self.cursor(charset="utf8") as cur:
-            cur.execute(self.INSERT_SONG, (songname, file_hash))
+            cur.execute(self.INSERT_SONG, (songname, file_hash, audio_length))
             return cur.lastrowid
 
     def query(self, hash):
@@ -272,34 +276,38 @@ class SQLDatabase(Database):
         for hash, offset in hashes:
             values.append((hash, sid, offset))
 
+        base_query = "INSERT IGNORE INTO fingerprints (%s, %s, %s) values " % (Database.FIELD_HASH, Database.FIELD_SONG_ID, Database.FIELD_OFFSET)
         with self.cursor(charset="utf8") as cur:
+            values.sort(key=lambda tup: tup[0])
+            cur.execute("START TRANSACTION;")
             for split_values in grouper(values, 1000):
-                cur.executemany(self.INSERT_FINGERPRINT, split_values)
+                values2tuple = tuple(chain.from_iterable(split_values))
+                query = base_query + ', '.join(['(UNHEX(%s), %s, %s)'] * len(split_values))
+                query += ";"
+                cur.execute(query, values2tuple)
+            cur.execute("COMMIT;")
 
-    def return_matches(self, hashes):
+
+    def return_matches(self, mapper):
         """
         Return the (song_id, offset_diff) tuples associated with
         a list of (sha1, sample_offset) values.
         """
         # Create a dictionary of hash => offset pairs for later lookups
-        mapper = {}
-        for hash, offset in hashes:
-            mapper[hash.upper()] = offset
 
         # Get an iteratable of all the hashes we need
         values = mapper.keys()
 
         with self.cursor(charset="utf8") as cur:
-            for split_values in grouper(values, 1000):
-                # Create our IN part of the query
-                query = self.SELECT_MULTIPLE
-                query = query % ', '.join(['UNHEX(%s)'] * len(split_values))
+            # Create our IN part of the query
+            query = self.SELECT_MULTIPLE
+            query = query % ', '.join(['UNHEX(%s)'] * len(values))
 
-                cur.execute(query, split_values)
+            cur.execute(query, values)
 
-                for hash, sid, offset in cur:
-                    # (sid, db_offset - song_sampled_offset)
-                    yield (sid, offset - mapper[hash])
+            for hash, sid, offset in cur:
+                # (sid, db_offset - song_sampled_offset)
+                yield (sid, offset - mapper[hash])
 
     def __getstate__(self):
         return (self._options,)

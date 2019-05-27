@@ -61,6 +61,10 @@ PEAK_SORT = True
 # with potentially lesser collisions of matches.
 FINGERPRINT_REDUCTION = 20
 
+# SHA1 has 40 hexadecimal chars to encode
+FINGERPRINT_REDUCTION = (40 if FINGERPRINT_REDUCTION > 40 else FINGERPRINT_REDUCTION)
+FINGERPRINT_REDUCTION = (FINGERPRINT_REDUCTION + 1 if FINGERPRINT_REDUCTION % 2 == 1 else FINGERPRINT_REDUCTION)
+
 def fingerprint(channel_samples, Fs=DEFAULT_FS,
                 wsize=DEFAULT_WINDOW_SIZE,
                 wratio=DEFAULT_OVERLAP_RATIO,
