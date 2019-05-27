@@ -215,7 +215,7 @@ If we zoom in even closer, we can begin to imagine how to bin and discretize the
 
 ![Spectgram zoomed](plots/spectrogram_zoomed.png)
 
-For a more detailed look at the making of Dejavu, see my blog post [here](http://willdrevo.com/fingerprinting-and-audio-recognition-with-python.html).
+For a more detailed look at the making of Dejavu, see my blog post [here](https://willdrevo.com/fingerprinting-and-audio-recognition-with-python/).
 
 ## How well it works
 

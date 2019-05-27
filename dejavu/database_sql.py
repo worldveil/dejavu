@@ -158,7 +158,7 @@ class SQLDatabase(Database):
         This also removes all songs that have been added but have no
         fingerprints associated with them.
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.CREATE_SONGS_TABLE)
             cur.execute(self.CREATE_FINGERPRINTS_TABLE)
             cur.execute(self.DELETE_UNFINGERPRINTED)
@@ -171,7 +171,7 @@ class SQLDatabase(Database):
         .. warning:
             This will result in a loss of data
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.DROP_FINGERPRINTS)
             cur.execute(self.DROP_SONGS)
 
@@ -181,14 +181,14 @@ class SQLDatabase(Database):
         """
         Removes all songs that have no fingerprints associated with them.
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.DELETE_UNFINGERPRINTED)
 
     def get_num_songs(self):
         """
         Returns number of songs the database has fingerprinted.
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.SELECT_UNIQUE_SONG_IDS)
 
             for count, in cur:
@@ -199,7 +199,7 @@ class SQLDatabase(Database):
         """
         Returns number of fingerprints the database has fingerprinted.
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.SELECT_NUM_FINGERPRINTS)
 
             for count, in cur:
@@ -211,14 +211,14 @@ class SQLDatabase(Database):
         Set the fingerprinted flag to TRUE (1) once a song has been completely
         fingerprinted in the database.
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.UPDATE_SONG_FINGERPRINTED, (sid,))
 
     def get_songs(self):
         """
         Return songs that have the fingerprinted flag set TRUE (1).
         """
-        with self.cursor(cursor_type=DictCursor) as cur:
+        with self.cursor(cursor_type=DictCursor, charset="utf8") as cur:
             cur.execute(self.SELECT_SONGS)
             for row in cur:
                 yield row
@@ -227,7 +227,7 @@ class SQLDatabase(Database):
         """
         Returns song by its ID.
         """
-        with self.cursor(cursor_type=DictCursor) as cur:
+        with self.cursor(cursor_type=DictCursor, charset="utf8") as cur:
             cur.execute(self.SELECT_SONG, (sid,))
             return cur.fetchone()
 
@@ -235,14 +235,14 @@ class SQLDatabase(Database):
         """
         Insert a (sha1, song_id, offset) row into database.
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.INSERT_FINGERPRINT, (hash, sid, offset))
 
     def insert_song(self, songname, file_hash, audio_length):
         """
         Inserts song in the database and returns the ID of the inserted record.
         """
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(self.INSERT_SONG, (songname, file_hash, audio_length))
             return cur.lastrowid
 
@@ -256,7 +256,7 @@ class SQLDatabase(Database):
         # select all if no key
         query = self.SELECT_ALL if hash is None else self.SELECT
 
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             cur.execute(query)
             for sid, offset in cur:
                 yield (sid, offset)
@@ -277,7 +277,7 @@ class SQLDatabase(Database):
             values.append((hash, sid, offset))
 
         base_query = "INSERT IGNORE INTO fingerprints (%s, %s, %s) values " % (Database.FIELD_HASH, Database.FIELD_SONG_ID, Database.FIELD_OFFSET)
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             values.sort(key=lambda tup: tup[0])
             cur.execute("START TRANSACTION;")
             for split_values in grouper(values, 1000):
@@ -298,7 +298,7 @@ class SQLDatabase(Database):
         # Get an iteratable of all the hashes we need
         values = mapper.keys()
 
-        with self.cursor() as cur:
+        with self.cursor(charset="utf8") as cur:
             # Create our IN part of the query
             query = self.SELECT_MULTIPLE
             query = query % ', '.join(['UNHEX(%s)'] * len(values))

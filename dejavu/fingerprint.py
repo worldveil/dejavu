@@ -56,9 +56,9 @@ MAX_HASH_TIME_DELTA = 200
 PEAK_SORT = True
 
 ######################################################################
-# Number of bits to throw away from the front of the SHA1 hash in the
-# fingerprint calculation. The more you throw away, the less storage, but
-# potentially higher collisions and misclassifications when identifying songs.
+# Number of bits to grab from the front of the SHA1 hash in the
+# fingerprint calculation. The more you grab, the more memory storage, 
+# with potentially lesser collisions of matches.
 FINGERPRINT_REDUCTION = 20
 
 # SHA1 has 40 hexadecimal chars to encode
@@ -94,18 +94,18 @@ def fingerprint(channel_samples, Fs=DEFAULT_FS,
 
 
 def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
-    # http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.morphology.iterate_structure.html#scipy.ndimage.morphology.iterate_structure
+    #  http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.iterate_structure.html#scipy.ndimage.iterate_structure
     struct = generate_binary_structure(2, 1)
     neighborhood = iterate_structure(struct, PEAK_NEIGHBORHOOD_SIZE)
 
-    # find local maxima using our fliter shape
+    # find local maxima using our filter shape
     local_max = maximum_filter(arr2D, footprint=neighborhood) == arr2D
     background = (arr2D == 0)
     eroded_background = binary_erosion(background, structure=neighborhood,
                                        border_value=1)
 
-    # Boolean mask of arr2D with True at peaks
-    detected_peaks = local_max - eroded_background
+    # Boolean mask of arr2D with True at peaks (Fixed deprecated boolean operator by changing '-' to '^')
+    detected_peaks = local_max ^ eroded_background
 
     # extract peaks
     amps = arr2D[detected_peaks]
@@ -114,12 +114,14 @@ def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
     # filter peaks
     amps = amps.flatten()
     peaks = zip(i, j, amps)
-    peaks_filtered = [x for x in peaks if x[2] > amp_min]  # freq, time, amp
-
+    peaks_filtered = filter(lambda x: x[2]>amp_min, peaks) # freq, time, amp
     # get indices for frequency and time
-    frequency_idx = [x[1] for x in peaks_filtered]
-    time_idx = [x[0] for x in peaks_filtered]
-
+    frequency_idx = []
+    time_idx = []
+    for x in peaks_filtered:
+        frequency_idx.append(x[1])
+        time_idx.append(x[0])
+    
     if plot:
         # scatter of the peaks
         fig, ax = plt.subplots()
@@ -146,7 +148,7 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
     for i in range(len(peaks)):
         for j in range(1, fan_value):
             if (i + j) < len(peaks):
-                
+
                 freq1 = peaks[i][IDX_FREQ_I]
                 freq2 = peaks[i + j][IDX_FREQ_I]
                 t1 = peaks[i][IDX_TIME_J]
