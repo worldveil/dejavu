@@ -1,0 +1,8 @@
+{
+    "database": {
+        "host": "db",
+        "user": "root",
+        "passwd": "", 
+        "db": "dejavu"
+    }
+}

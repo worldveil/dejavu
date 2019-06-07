@@ -1,0 +1,40 @@
+version: "3"
+services:
+    db:
+      image: mysql
+      container_name: ${MYSQL_CONTAINER_NAME}
+      environment:
+        - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      networks:
+        - db-backend
+    db-setup:
+      image: mysql
+      container_name: ${MYSQL_CONTAINER_NAME}-setup
+      command: >
+        sh -c '
+        while ! mysqladmin ping -h"db" --silent; do echo "Waiting for MySQL service"; sleep 1; done;
+        echo "Creating database '${DATABASE_NAME}'";
+        exec mysql -h"db" -uroot -e "CREATE DATABASE IF NOT EXISTS ${DATABASE_NAME}"';
+      networks:
+        - db-backend
+      depends_on:
+        - db
+    dejavu:
+      env_file: ./docker/.dejavu_env
+      container_name: dejavu
+      image: dejavu
+      volumes:
+        - .:/dejavu
+      build:
+        dockerfile: ./docker/Dockerfile
+        context: ./
+        args:
+          http_proxy: ${http_proxy}
+          https_proxy: ${https_proxy}
+      networks:
+        - db-backend
+      depends_on:
+        - db
+        - db-setup
+networks:
+  db-backend:
