@@ -42,7 +42,7 @@ setup(
     author_email='will.drevo@gmail.com',
     maintainer="Will Drevo",
     maintainer_email="will.drevo@gmail.com",
-    url='http://github.com/tuxdna/dejavu',
+    url='http://github.com/worldveil/dejavu',
     license='MIT License',
     include_package_data=True,
     packages=find_packages(),

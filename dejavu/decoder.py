@@ -6,6 +6,16 @@ from pydub.utils import audioop
 import wavio
 from hashlib import sha1
 
+# https://github.com/sampsyo/audioread
+import audioread
+
+def get_duration(file_path):
+    duration = 0
+    with audioread.audio_open(file_path) as f:
+        duration = f.duration
+        f.close()
+    return duration
+
 def unique_hash(filepath, blocksize=2**20):
     """ Small function to generate a hash to uniquely generate
     a file. Inspired by MD5 version here:
