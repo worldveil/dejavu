@@ -10,7 +10,7 @@ So far Dejavu has only been tested on Unix systems.
 * [`matplotlib`](http://matplotlib.org/), used for spectrograms and plotting
 * [`MySQLdb`](http://mysql-python.sourceforge.net/MySQLdb.html) for interfacing with MySQL databases
 
-For installing `ffmpeg` on Mac OS X, I highly recommend [this post](http://jungels.net/articles/ffmpeg-howto.html).
+For installing `ffmpeg` on Mac OS X, I highly recommend [this post](http://stephenjungels.com/jungels.net/articles/ffmpeg-howto.html).
 
 ## Fedora 20+
 
@@ -61,3 +61,31 @@ sudo ln -s /usr/local/mysql/lib/libmysqlclient.18.dylib /usr/lib/libmysqlclient.
 ```
 
 However installing `portaudio` and/or `ffmpeg` from source is also doable. 
+
+## Windows
+
+### Dependency installation for Windows
+
+Tested on Windows 7.
+
+If your python installation does not have `pip`, follow
+[these instructions](https://pip.pypa.io/en/latest/installing).
+
+Install `numpy`, `scipy` and `matplotlib` by downloading binaries from
+[this site](http://www.lfd.uci.edu/~gohlke/pythonlibs/) if you can't
+install them using `pip`. You can do the same for any other module that you can't install using `pip`.
+
+Install
+[MySQL Community Server](https://dev.mysql.com/downloads/mysql) and
+make sure your MySQL installation is
+[working](http://dev.mysql.com/doc/refman/5.7/en/windows-testing.html).
+
+Get the appropriate static build of
+[FFmpeg](http://ffmpeg.zeranoe.com/builds/) and add the bin directory
+(includes ffmpeg.exe) to system path (environment variable).
+
+```
+pip install pyaudio
+pip install pydub
+pip install mysqlclient
+```

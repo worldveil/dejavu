@@ -77,6 +77,16 @@ class Database(object):
         pass
 
     @abc.abstractmethod
+    def update_match_record(self, sid):
+        """
+        Increments the number of matches recorded so far for the
+        specified song in the database.
+        
+        sid: Song identifier
+        """
+        pass
+
+    @abc.abstractmethod
     def get_songs(self):
         """
         Returns all fully fingerprinted songs in the database.
