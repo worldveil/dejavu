@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
-from scipy.ndimage.filters import maximum_filter
+from scipy.ndimage.filters import maximum_filter1d
 from scipy.ndimage.morphology import (generate_binary_structure,
                                       iterate_structure, binary_erosion)
 import hashlib
@@ -93,9 +93,10 @@ def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
     #  http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.iterate_structure.html#scipy.ndimage.iterate_structure
     struct = generate_binary_structure(2, 1)
     neighborhood = iterate_structure(struct, PEAK_NEIGHBORHOOD_SIZE)
-
     # find local maxima using our filter shape
-    local_max = maximum_filter(arr2D, footprint=neighborhood) == arr2D
+    local_max = maximum_filter1d(arr2D, size=PEAK_NEIGHBORHOOD_SIZE*2+1, axis=0)
+    local_max = maximum_filter1d(local_max, size=PEAK_NEIGHBORHOOD_SIZE*2+1, axis=1)
+    local_max = local_max == arr2D
     background = (arr2D == 0)
     eroded_background = binary_erosion(background, structure=neighborhood,
                                        border_value=1)
