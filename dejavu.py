@@ -1,15 +1,14 @@
 #!/usr/bin/python
 
+import argparse
+import json
 import os
 import sys
-import json
 import warnings
-import argparse
+from argparse import RawTextHelpFormatter
 
 from dejavu import Dejavu
-from dejavu.recognize import FileRecognizer
-from dejavu.recognize import MicrophoneRecognizer
-from argparse import RawTextHelpFormatter
+from dejavu.recognize import FileRecognizer, MicrophoneRecognizer
 
 warnings.filterwarnings("ignore")
 
@@ -17,14 +16,14 @@ DEFAULT_CONFIG_FILE = "dejavu.cnf.SAMPLE"
 
 
 def init(configpath):
-    """ 
+    """
     Load config from a JSON file
     """
     try:
         with open(configpath) as f:
             config = json.load(f)
     except IOError as err:
-        print(("Cannot open configuration: %s. Exiting" % (str(err))))
+        print(f"Cannot open configuration: {str(err)}. Exiting")
         sys.exit(1)
 
     # create a Dejavu instance
@@ -59,7 +58,7 @@ if __name__ == '__main__':
     config_file = args.config
     if config_file is None:
         config_file = DEFAULT_CONFIG_FILE
-        # print "Using default config file: %s" % (config_file)
+        # print ("Using default config file: {config_file}")
 
     djv = init(config_file)
     if args.fingerprint:
@@ -67,8 +66,7 @@ if __name__ == '__main__':
         if len(args.fingerprint) == 2:
             directory = args.fingerprint[0]
             extension = args.fingerprint[1]
-            print(("Fingerprinting all .%s files in the %s directory"
-                  % (extension, directory)))
+            print(f"Fingerprinting all .{extension} files in the {directory} directory")
             djv.fingerprint_directory(directory, ["." + extension], 4)
 
         elif len(args.fingerprint) == 1:
