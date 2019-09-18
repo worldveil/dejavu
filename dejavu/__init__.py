@@ -1,28 +1,23 @@
-from dejavu.database import get_database, Database
-import dejavu.decoder as decoder
-import fingerprint
 import multiprocessing
 import os
-import traceback
 import sys
+import traceback
+
+import dejavu.decoder as decoder
+from dejavu.config.config import (CONFIDENCE, DEFAULT_FS,
+                                  DEFAULT_OVERLAP_RATIO, DEFAULT_WINDOW_SIZE,
+                                  FIELD_FILE_SHA1, OFFSET, OFFSET_SECS,
+                                  SONG_ID, SONG_NAME, TOPN)
+from dejavu.database import get_database
+from dejavu.fingerprint import fingerprint
 
 
-class Dejavu(object):
-
-    SONG_ID = "song_id"
-    SONG_NAME = 'song_name'
-    CONFIDENCE = 'confidence'
-    MATCH_TIME = 'match_time'
-    OFFSET = 'offset'
-    OFFSET_SECS = 'offset_seconds'
-
+class Dejavu:
     def __init__(self, config):
-        super(Dejavu, self).__init__()
-
         self.config = config
 
         # initialize db
-        db_cls = get_database(config.get("database_type", None))
+        db_cls = get_database(config.get("database_type", "mysql").lower())
 
         self.db = db_cls(**config.get("database", {}))
         self.db.setup()
@@ -39,7 +34,7 @@ class Dejavu(object):
         self.songs = self.db.get_songs()
         self.songhashes_set = set()  # to know which ones we've computed before
         for song in self.songs:
-            song_hash = song[Database.FIELD_FILE_SHA1]
+            song_hash = song[FIELD_FILE_SHA1]
             self.songhashes_set.add(song_hash)
 
     def fingerprint_directory(self, path, extensions, nprocesses=None):
@@ -55,26 +50,23 @@ class Dejavu(object):
 
         filenames_to_fingerprint = []
         for filename, _ in decoder.find_files(path, extensions):
-
             # don't refingerprint already fingerprinted files
             if decoder.unique_hash(filename) in self.songhashes_set:
-                print "%s already fingerprinted, continuing..." % filename
+                print(f"{filename} already fingerprinted, continuing...")
                 continue
 
             filenames_to_fingerprint.append(filename)
 
         # Prepare _fingerprint_worker input
-        worker_input = zip(filenames_to_fingerprint,
-                           [self.limit] * len(filenames_to_fingerprint))
+        worker_input = list(zip(filenames_to_fingerprint, [self.limit] * len(filenames_to_fingerprint)))
 
         # Send off our tasks
-        iterator = pool.imap_unordered(_fingerprint_worker,
-                                       worker_input)
+        iterator = pool.imap_unordered(_fingerprint_worker, worker_input)
 
         # Loop till we have all of them
         while True:
             try:
-                song_name, hashes, file_hash = iterator.next()
+                song_name, hashes, file_hash = next(iterator)
             except multiprocessing.TimeoutError:
                 continue
             except StopIteration:
@@ -99,7 +91,7 @@ class Dejavu(object):
         song_name = song_name or songname
         # don't refingerprint already fingerprinted files
         if song_hash in self.songhashes_set:
-            print "%s already fingerprinted, continuing..." % song_name
+            print(f"{song_name} already fingerprinted, continuing...")
         else:
             song_name, hashes, file_hash = _fingerprint_worker(
                 filepath,
@@ -112,22 +104,21 @@ class Dejavu(object):
             self.db.set_song_fingerprinted(sid)
             self.get_fingerprinted_songs()
 
-    def find_matches(self, samples, Fs=fingerprint.DEFAULT_FS):
-        hashes = fingerprint.fingerprint(samples, Fs=Fs)
+    def find_matches(self, samples, Fs=DEFAULT_FS):
+        hashes = fingerprint(samples, Fs=Fs)
         return self.db.return_matches(hashes)
 
-    def align_matches(self, matches):
+    def align_matches(self, matches, topn=TOPN):
         """
             Finds hash matches that align in time with other matches and finds
             consensus about which hashes are "true" signal from the audio.
 
-            Returns a dictionary with match information.
+            Returns a list of dictionaries (based on topn) with match information.
         """
         # align by diffs
         diff_counter = {}
-        largest = 0
         largest_count = 0
-        song_id = -1
+
         for tup in matches:
             sid, diff = tup
             if diff not in diff_counter:
@@ -137,30 +128,65 @@ class Dejavu(object):
             diff_counter[diff][sid] += 1
 
             if diff_counter[diff][sid] > largest_count:
-                largest = diff
                 largest_count = diff_counter[diff][sid]
-                song_id = sid
 
-        # extract idenfication
-        song = self.db.get_song_by_id(song_id)
-        if song:
-            # TODO: Clarify what `get_song_by_id` should return.
-            songname = song.get(Dejavu.SONG_NAME, None)
-        else:
-            return None
+        # create dic where key are songs ids
+        songs_num_matches = {}
+        for dc in diff_counter:
+            for sid in diff_counter[dc]:
+                match_val = diff_counter[dc][sid]
+                if (sid not in songs_num_matches) or (match_val > songs_num_matches[sid]['value']):
+                    songs_num_matches[sid] = {
+                        'sid': sid,
+                        'value': match_val,
+                        'largest': dc
+                    }
 
-        # return match info
-        nseconds = round(float(largest) / fingerprint.DEFAULT_FS *
-                         fingerprint.DEFAULT_WINDOW_SIZE *
-                         fingerprint.DEFAULT_OVERLAP_RATIO, 5)
-        song = {
-            Dejavu.SONG_ID : song_id,
-            Dejavu.SONG_NAME : songname.encode("utf8"),
-            Dejavu.CONFIDENCE : largest_count,
-            Dejavu.OFFSET : int(largest),
-            Dejavu.OFFSET_SECS : nseconds,
-            Database.FIELD_FILE_SHA1 : song.get(Database.FIELD_FILE_SHA1, None).encode("utf8"),}
-        return song
+        # use dicc of songs to create an ordered (descending) list using the match value property assigned to each song
+        songs_num_matches_list = []
+        for s in songs_num_matches:
+            songs_num_matches_list.append({
+                'sid': s,
+                'object': songs_num_matches[s]
+            })
+
+        songs_num_matches_list_ordered = sorted(songs_num_matches_list, key=lambda x: x['object']['value'],
+                                                reverse=True)
+
+        # iterate the ordered list and fill results
+        songs_result = []
+        for s in songs_num_matches_list_ordered:
+
+            # get expected variable by the original code
+            song_id = s['object']['sid']
+            largest = s['object']['largest']
+            largest_count = s['object']['value']
+
+            # extract identification
+            song = self.db.get_song_by_id(song_id)
+            if song:
+                # TODO: Clarify what `get_song_by_id` should return.
+                songname = song.get(SONG_NAME, None)
+
+                # return match info
+                nseconds = round(float(largest) / DEFAULT_FS *
+                                 DEFAULT_WINDOW_SIZE *
+                                 DEFAULT_OVERLAP_RATIO, 5)
+                song = {
+                    SONG_ID: song_id,
+                    SONG_NAME: songname.encode("utf8"),
+                    CONFIDENCE: largest_count,
+                    OFFSET: int(largest),
+                    OFFSET_SECS: nseconds,
+                    FIELD_FILE_SHA1: song.get(FIELD_FILE_SHA1, None).encode("utf8")
+                }
+
+                songs_result.append(song)
+
+                # only consider up to topn elements in the result
+                if len(songs_result) > topn:
+                    break
+        return songs_result
 
     def recognize(self, recognizer, *options, **kwoptions):
         r = recognizer(self)
@@ -177,26 +203,15 @@ def _fingerprint_worker(filename, limit=None, song_name=None):
 
     songname, extension = os.path.splitext(os.path.basename(filename))
     song_name = song_name or songname
-    channels, Fs, file_hash = decoder.read(filename, limit)
+    channels, fs, file_hash = decoder.read(filename, limit)
     result = set()
     channel_amount = len(channels)
 
     for channeln, channel in enumerate(channels):
         # TODO: Remove prints or change them into optional logging.
-        print("Fingerprinting channel %d/%d for %s" % (channeln + 1,
-                                                       channel_amount,
-                                                       filename))
-        hashes = fingerprint.fingerprint(channel, Fs=Fs)
-        print("Finished channel %d/%d for %s" % (channeln + 1, channel_amount,
-                                                 filename))
+        print(f"Fingerprinting channel {channeln + 1}/{channel_amount} for {filename}")
+        hashes = fingerprint(channel, Fs=fs)
+        print(f"Finished channel {channeln + 1}/{channel_amount} for {filename}")
         result |= set(hashes)
 
     return song_name, result, file_hash
-
-
-def chunkify(lst, n):
-    """
-    Splits a list into roughly n equal parts.
-    http://stackoverflow.com/questions/2130016/splitting-a-list-of-arbitrary-size-into-only-roughly-n-equal-parts
-    """
-    return [lst[i::n] for i in xrange(n)]

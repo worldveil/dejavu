@@ -24,7 +24,7 @@ def init(configpath):
         with open(configpath) as f:
             config = json.load(f)
     except IOError as err:
-        print("Cannot open configuration: %s. Exiting" % (str(err)))
+        print(("Cannot open configuration: %s. Exiting" % (str(err))))
         sys.exit(1)
 
     # create a Dejavu instance
@@ -67,8 +67,8 @@ if __name__ == '__main__':
         if len(args.fingerprint) == 2:
             directory = args.fingerprint[0]
             extension = args.fingerprint[1]
-            print("Fingerprinting all .%s files in the %s directory"
-                  % (extension, directory))
+            print(("Fingerprinting all .%s files in the %s directory"
+                  % (extension, directory)))
             djv.fingerprint_directory(directory, ["." + extension], 4)
 
         elif len(args.fingerprint) == 1:

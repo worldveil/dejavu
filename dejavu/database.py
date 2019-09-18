@@ -1,22 +1,15 @@
-from __future__ import absolute_import
 import abc
+import importlib
+from dejavu.config.config import DATABASES
 
 
-class Database(object):
-    __metaclass__ = abc.ABCMeta
-
-    FIELD_FILE_SHA1 = 'file_sha1'
-    FIELD_SONG_ID = 'song_id'
-    FIELD_SONGNAME = 'song_name'
-    FIELD_OFFSET = 'offset'
-    FIELD_HASH = 'hash'
-
+class Database(object, metaclass=abc.ABCMeta):
     # Name of your Database subclass, this is used in configuration
     # to refer to your class
     type = None
 
     def __init__(self):
-        super(Database, self).__init__()
+        super().__init__()
 
     def before_fork(self):
         """
@@ -159,18 +152,11 @@ class Database(object):
         pass
 
 
-def get_database(database_type=None):
-    # Default to using the mysql database
-    database_type = database_type or "mysql"
-    # Lower all the input.
-    database_type = database_type.lower()
-
-    for db_cls in Database.__subclasses__():
-        if db_cls.type == database_type:
-            return db_cls
-
-    raise TypeError("Unsupported database type supplied.")
-
-
-# Import our default database handler
-import dejavu.database_sql
+def get_database(database_type="mysql"):
+    path, db_class_name = DATABASES[database_type]
+    try:
+        db_module = importlib.import_module(path)
+        db_class = getattr(db_module, db_class_name)
+        return db_class
+    except ImportError:
+        raise TypeError("Unsupported database type supplied.")

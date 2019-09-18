@@ -3,8 +3,9 @@ import fnmatch
 import numpy as np
 from pydub import AudioSegment
 from pydub.utils import audioop
-import wavio
+from . import wavio
 from hashlib import sha1
+
 
 def unique_hash(filepath, blocksize=2**20):
     """ Small function to generate a hash to uniquely generate
@@ -14,7 +15,7 @@ def unique_hash(filepath, blocksize=2**20):
     Works with large files. 
     """
     s = sha1()
-    with open(filepath , "rb") as f:
+    with open(filepath, "rb") as f:
         while True:
             buf = f.read(blocksize)
             if not buf:
@@ -29,7 +30,7 @@ def find_files(path, extensions):
 
     for dirpath, dirnames, files in os.walk(path):
         for extension in extensions:
-            for f in fnmatch.filter(files, "*.%s" % extension):
+            for f in fnmatch.filter(files, f"*.{extension}"):
                 p = os.path.join(dirpath, f)
                 yield (p, extension)
 
@@ -53,15 +54,15 @@ def read(filename, limit=None):
         if limit:
             audiofile = audiofile[:limit * 1000]
 
-        data = np.fromstring(audiofile._data, np.int16)
+        data = np.fromstring(audiofile.raw_data, np.int16)
 
         channels = []
-        for chn in xrange(audiofile.channels):
+        for chn in range(audiofile.channels):
             channels.append(data[chn::audiofile.channels])
 
-        fs = audiofile.frame_rate
+        audiofile.frame_rate
     except audioop.error:
-        fs, _, audiofile = wavio.readwav(filename)
+        _, _, audiofile = wavio.readwav(filename)
 
         if limit:
             audiofile = audiofile[:limit * 1000]

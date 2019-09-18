@@ -5,6 +5,7 @@
 # Github: github.com/WarrenWeckesser/wavio
 
 import wave as _wave
+
 import numpy as _np
 
 

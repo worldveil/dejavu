@@ -1,16 +1,16 @@
-# encoding: utf-8
-import dejavu.fingerprint as fingerprint
-import dejavu.decoder as decoder
+import time
+
 import numpy as np
 import pyaudio
-import time
+
+import dejavu.decoder as decoder
+from dejavu.config.config import DEFAULT_FS
 
 
 class BaseRecognizer(object):
-
     def __init__(self, dejavu):
         self.dejavu = dejavu
-        self.Fs = fingerprint.DEFAULT_FS
+        self.Fs = DEFAULT_FS
 
     def _recognize(self, *data):
         matches = []
@@ -24,32 +24,32 @@ class BaseRecognizer(object):
 
 class FileRecognizer(BaseRecognizer):
     def __init__(self, dejavu):
-        super(FileRecognizer, self).__init__(dejavu)
+        super().__init__(dejavu)
 
     def recognize_file(self, filename):
         frames, self.Fs, file_hash = decoder.read(filename, self.dejavu.limit)
 
         t = time.time()
-        match = self._recognize(*frames)
+        matches = self._recognize(*frames)
         t = time.time() - t
 
-        if match:
+        for match in matches:
             match['match_time'] = t
 
-        return match
+        return matches
 
     def recognize(self, filename):
         return self.recognize_file(filename)
 
 
 class MicrophoneRecognizer(BaseRecognizer):
-    default_chunksize   = 8192
-    default_format      = pyaudio.paInt16
-    default_channels    = 2
-    default_samplerate  = 44100
+    default_chunksize = 8192
+    default_format = pyaudio.paInt16
+    default_channels = 2
+    default_samplerate = 44100
 
     def __init__(self, dejavu):
-        super(MicrophoneRecognizer, self).__init__(dejavu)
+        super().__init__(dejavu)
         self.audio = pyaudio.PyAudio()
         self.stream = None
         self.data = []
