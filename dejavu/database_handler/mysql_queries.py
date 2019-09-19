@@ -71,7 +71,7 @@ INSERT_FINGERPRINT = f"""
     INSERT IGNORE INTO `{FINGERPRINTS_TABLENAME}` (
             `{FIELD_SONG_ID}`
         ,   `{FIELD_HASH}`
-        , `{FIELD_OFFSET}`) 
+        ,   `{FIELD_OFFSET}`) 
     VALUES (%s, UNHEX(%s), %s);
 """
 
