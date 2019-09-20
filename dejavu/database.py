@@ -153,10 +153,10 @@ class Database(object, metaclass=abc.ABCMeta):
 
 
 def get_database(database_type="mysql"):
-    path, db_class_name = DATABASES[database_type]
     try:
+        path, db_class_name = DATABASES[database_type]
         db_module = importlib.import_module(path)
         db_class = getattr(db_module, db_class_name)
         return db_class
-    except ImportError:
+    except (ImportError, KeyError):
         raise TypeError("Unsupported database type supplied.")

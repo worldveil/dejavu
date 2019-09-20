@@ -44,8 +44,8 @@ Start by creating a Dejavu object with your configurations settings (Dejavu take
 ...     "database": {
 ...         "host": "127.0.0.1",
 ...         "user": "root",
-...         "passwd": <password above>, 
-...         "db": <name of the database you created above>,
+...         "password": <password above>, 
+...         "database": <name of the database you created above>,
 ...     }
 ... }
 >>> djv = Dejavu(config)
@@ -91,8 +91,8 @@ An example configuration is as follows:
 ...     "database": {
 ...         "host": "127.0.0.1",
 ...         "user": "root",
-...         "passwd": "Password123", 
-...         "db": "dejavu_db",
+...         "password": "Password123", 
+...         "database": "dejavu_db",
 ...     },
 ...     "database_type" : "mysql",
 ...     "fingerprint_limit" : 10
