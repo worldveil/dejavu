@@ -3,12 +3,113 @@ import queue
 import mysql.connector
 from mysql.connector.errors import DatabaseError
 
-import dejavu.database_handler.mysql_queries as queries
-from dejavu.database import Database
+from dejavu.base_classes.common_database import CommonDatabase
+from dejavu.config.settings import (FIELD_FILE_SHA1, FIELD_FINGERPRINTED,
+                                    FIELD_HASH, FIELD_OFFSET, FIELD_SONG_ID,
+                                    FIELD_SONGNAME, FINGERPRINTS_TABLENAME,
+                                    SONGS_TABLENAME)
 
 
-class MySQLDatabase(Database):
+class MySQLDatabase(CommonDatabase):
     type = "mysql"
+
+    # CREATES
+    CREATE_SONGS_TABLE = f"""
+        CREATE TABLE IF NOT EXISTS `{SONGS_TABLENAME}` (
+            `{FIELD_SONG_ID}` MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT
+        ,   `{FIELD_SONGNAME}` VARCHAR(250) NOT NULL
+        ,   `{FIELD_FINGERPRINTED}` TINYINT DEFAULT 0
+        ,   `{FIELD_FILE_SHA1}` BINARY(20) NOT NULL
+        ,   `date_created` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ,   `date_modified` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ,   CONSTRAINT `pk_{SONGS_TABLENAME}_{FIELD_SONG_ID}` PRIMARY KEY (`{FIELD_SONG_ID}`)
+        ,   CONSTRAINT `uq_{SONGS_TABLENAME}_{FIELD_SONG_ID}` UNIQUE KEY (`{FIELD_SONG_ID}`)
+        ) ENGINE=INNODB;
+    """
+
+    CREATE_FINGERPRINTS_TABLE = f"""
+        CREATE TABLE IF NOT EXISTS `{FINGERPRINTS_TABLENAME}` (
+            `{FIELD_HASH}` BINARY(10) NOT NULL
+        ,   `{FIELD_SONG_ID}` MEDIUMINT UNSIGNED NOT NULL
+        ,   `{FIELD_OFFSET}` INT UNSIGNED NOT NULL
+        ,   `date_created` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ,   `date_modified` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ,   INDEX `ix_{FINGERPRINTS_TABLENAME}_{FIELD_HASH}` (`{FIELD_HASH}`)
+        ,   CONSTRAINT `uq_{FINGERPRINTS_TABLENAME}_{FIELD_SONG_ID}_{FIELD_OFFSET}_{FIELD_HASH}`
+                UNIQUE KEY  (`{FIELD_SONG_ID}`, `{FIELD_OFFSET}`, `{FIELD_HASH}`)
+        ,   CONSTRAINT `fk_{FINGERPRINTS_TABLENAME}_{FIELD_SONG_ID}` FOREIGN KEY (`{FIELD_SONG_ID}`)
+                REFERENCES `{SONGS_TABLENAME}`(`{FIELD_SONG_ID}`) ON DELETE CASCADE
+    ) ENGINE=INNODB;
+    """
+
+    # INSERTS (IGNORES DUPLICATES)
+    INSERT_FINGERPRINT = f"""
+        INSERT IGNORE INTO `{FINGERPRINTS_TABLENAME}` (
+                `{FIELD_SONG_ID}`
+            ,   `{FIELD_HASH}`
+            ,   `{FIELD_OFFSET}`)
+        VALUES (%s, UNHEX(%s), %s);
+    """
+
+    INSERT_SONG = f"""
+        INSERT INTO `{SONGS_TABLENAME}` (`{FIELD_SONGNAME}`,`{FIELD_FILE_SHA1}`)
+        VALUES (%s, UNHEX(%s));
+    """
+
+    # SELECTS
+    SELECT = f"""
+        SELECT `{FIELD_SONG_ID}`, `{FIELD_OFFSET}`
+        FROM `{FINGERPRINTS_TABLENAME}`
+        WHERE `{FIELD_HASH}` = UNHEX(%s);
+    """
+
+    SELECT_MULTIPLE = f"""
+        SELECT HEX(`{FIELD_HASH}`), `{FIELD_SONG_ID}`, `{FIELD_OFFSET}`
+        FROM `{FINGERPRINTS_TABLENAME}`
+        WHERE `{FIELD_HASH}` IN (%s);
+    """
+
+    SELECT_ALL = f"SELECT `{FIELD_SONG_ID}`, `{FIELD_OFFSET}` FROM `{FINGERPRINTS_TABLENAME}`;"
+
+    SELECT_SONG = f"""
+        SELECT `{FIELD_SONGNAME}`, HEX(`{FIELD_FILE_SHA1}`) AS `{FIELD_FILE_SHA1}`
+        FROM `{SONGS_TABLENAME}`
+        WHERE `{FIELD_SONG_ID}` = %s;
+    """
+
+    SELECT_NUM_FINGERPRINTS = f"SELECT COUNT(*) AS n FROM `{FINGERPRINTS_TABLENAME}`;"
+
+    SELECT_UNIQUE_SONG_IDS = f"""
+        SELECT COUNT(`{FIELD_SONG_ID}`) AS n
+        FROM `{SONGS_TABLENAME}`
+        WHERE `{FIELD_FINGERPRINTED}` = 1;
+    """
+
+    SELECT_SONGS = f"""
+        SELECT
+            `{FIELD_SONG_ID}`
+        ,   `{FIELD_SONGNAME}`
+        ,   HEX(`{FIELD_FILE_SHA1}`) AS `{FIELD_FILE_SHA1}`
+        FROM `{SONGS_TABLENAME}`
+        WHERE `{FIELD_FINGERPRINTED}` = 1;
+    """
+
+    # DROPS
+    DROP_FINGERPRINTS = f"DROP TABLE IF EXISTS `{FINGERPRINTS_TABLENAME}`;"
+    DROP_SONGS = f"DROP TABLE IF EXISTS `{SONGS_TABLENAME}`;"
+
+    # update
+    UPDATE_SONG_FINGERPRINTED = f"""
+        UPDATE `{SONGS_TABLENAME}` SET `{FIELD_FINGERPRINTED}` = 1 WHERE `{FIELD_SONG_ID}` = %s;
+    """
+
+    # DELETE
+    DELETE_UNFINGERPRINTED = f"""
+        DELETE FROM `{SONGS_TABLENAME}` WHERE `{FIELD_FINGERPRINTED}` = 0;
+    """
+
+    # IN
+    IN_MATCH = f"UNHEX(%s)"
 
     def __init__(self, **options):
         super().__init__()
@@ -20,159 +121,13 @@ class MySQLDatabase(Database):
         # the previous process.
         Cursor.clear_cache()
 
-    def setup(self):
-        """
-        Creates any non-existing tables required for dejavu to function.
-
-        This also removes all songs that have been added but have no
-        fingerprints associated with them.
-        """
-        with self.cursor() as cur:
-            cur.execute(queries.CREATE_SONGS_TABLE)
-            cur.execute(queries.CREATE_FINGERPRINTS_TABLE)
-            cur.execute(queries.DELETE_UNFINGERPRINTED)
-
-    def empty(self):
-        """
-        Drops tables created by dejavu and then creates them again
-        by calling `SQLDatabase.setup`.
-
-        .. warning:
-            This will result in a loss of data
-        """
-        with self.cursor() as cur:
-            cur.execute(queries.DROP_FINGERPRINTS)
-            cur.execute(queries.DROP_SONGS)
-
-        self.setup()
-
-    def delete_unfingerprinted_songs(self):
-        """
-        Removes all songs that have no fingerprints associated with them.
-        """
-        with self.cursor() as cur:
-            cur.execute(queries.DELETE_UNFINGERPRINTED)
-
-    def get_num_songs(self):
-        """
-        Returns number of songs the database has fingerprinted.
-        """
-        with self.cursor() as cur:
-            cur.execute(queries.SELECT_UNIQUE_SONG_IDS)
-            count = cur.fetchone()[0] if cur.rowcount != 0 else 0
-
-        return count
-
-    def get_num_fingerprints(self):
-        """
-        Returns number of fingerprints the database has fingerprinted.
-        """
-        with self.cursor() as cur:
-            cur.execute(queries.SELECT_NUM_FINGERPRINTS)
-            count = cur.fetchone()[0] if cur.rowcount != 0 else 0
-            cur.close()
-
-        return count
-
-    def set_song_fingerprinted(self, sid):
-        """
-        Set the fingerprinted flag to TRUE (1) once a song has been completely
-        fingerprinted in the database.
-        """
-        with self.cursor() as cur:
-            cur.execute(queries.UPDATE_SONG_FINGERPRINTED, (sid,))
-
-    def get_songs(self):
-        """
-        Return songs that have the fingerprinted flag set TRUE (1).
-        """
-        with self.cursor(dictionary=True) as cur:
-            cur.execute(queries.SELECT_SONGS)
-            for row in cur:
-                yield row
-
-    def get_song_by_id(self, sid):
-        """
-        Returns song by its ID.
-        """
-        with self.cursor(dictionary=True) as cur:
-            cur.execute(queries.SELECT_SONG, (sid,))
-            return cur.fetchone()
-
-    def insert(self, hash, sid, offset):
-        """
-        Insert a (sha1, song_id, offset) row into database.
-        """
-        with self.cursor() as cur:
-            cur.execute(queries.INSERT_FINGERPRINT, (hash, sid, offset))
-
     def insert_song(self, song_name, file_hash):
         """
         Inserts song in the database and returns the ID of the inserted record.
         """
         with self.cursor() as cur:
-            cur.execute(queries.INSERT_SONG, (song_name, file_hash))
+            cur.execute(self.INSERT_SONG, (song_name, file_hash))
             return cur.lastrowid
-
-    def query(self, hash):
-        """
-        Return all tuples associated with hash.
-
-        If hash is None, returns all entries in the
-        database (be careful with that one!).
-        """
-        if hash:
-            with self.cursor() as cur:
-                cur.execute(queries.SELECT, (hash,))
-                for sid, offset in cur:
-                    yield (sid, offset)
-        else:  # select all if no key
-            with self.cursor() as cur:
-                cur.execute(queries.SELECT_ALL)
-                for sid, offset in cur:
-                    yield (sid, offset)
-
-    def get_iterable_kv_pairs(self):
-        """
-        Returns all tuples in database.
-        """
-        return self.query(None)
-
-    def insert_hashes(self, sid, hashes, batch=1000):
-        """
-        Insert series of hash => song_id, offset
-        values into the database.
-        """
-        values = [(sid, hash, int(offset)) for hash, offset in hashes]
-
-        with self.cursor() as cur:
-            for index in range(0, len(hashes), batch):
-                cur.executemany(queries.INSERT_FINGERPRINT, values[index: index + batch])
-
-    def return_matches(self, hashes, batch=1000):
-        """
-        Return the (song_id, offset_diff) tuples associated with
-        a list of (sha1, sample_offset) values.
-        """
-        # Create a dictionary of hash => offset pairs for later lookups
-        mapper = {}
-        for hash, offset in hashes:
-            mapper[hash.upper()] = offset
-
-        # Get an iterable of all the hashes we need
-        values = list(mapper.keys())
-
-        with self.cursor() as cur:
-            for index in range(0, len(values), batch):
-                # Create our IN part of the query
-                query = queries.SELECT_MULTIPLE
-                query = query % ', '.join(['UNHEX(%s)'] * len(values[index: index + batch]))
-
-                cur.execute(query, values[index: index + batch])
-
-                for hash, sid, offset in cur:
-                    # (sid, db_offset - song_sampled_offset)
-                    yield (sid, offset - mapper[hash])
 
     def __getstate__(self):
         return self._options,

@@ -1,5 +1,4 @@
 from setuptools import setup, find_packages
-# import os, sys
 
 
 def parse_requirements(requirements):
@@ -14,19 +13,20 @@ def parse_requirements(requirements):
         reqs = list(filter((lambda x: x), nocomments))
         return reqs
 
+
 PACKAGE_NAME = "PyDejavu"
 PACKAGE_VERSION = "0.1.3"
 SUMMARY = 'Dejavu: Audio Fingerprinting in Python'
 DESCRIPTION = """
 Audio fingerprinting and recognition algorithm implemented in Python
 
-See the explanation here: 
+See the explanation here:
 
 `http://willdrevo.com/fingerprinting-and-audio-recognition-with-python/`__
 
-Dejavu can memorize recorded audio by listening to it once and fingerprinting 
-it. Then by playing a song and recording microphone input or on disk file, 
-Dejavu attempts to match the audio against the fingerprints held in the 
+Dejavu can memorize recorded audio by listening to it once and fingerprinting
+it. Then by playing a song and recording microphone input or on disk file,
+Dejavu attempts to match the audio against the fingerprints held in the
 database, returning the song or recording being played.
 
 __ http://willdrevo.com/fingerprinting-and-audio-recognition-with-python/

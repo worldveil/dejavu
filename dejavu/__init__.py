@@ -3,13 +3,13 @@ import os
 import sys
 import traceback
 
-import dejavu.decoder as decoder
-from dejavu.config.config import (CONFIDENCE, DEFAULT_FS,
-                                  DEFAULT_OVERLAP_RATIO, DEFAULT_WINDOW_SIZE,
-                                  FIELD_FILE_SHA1, OFFSET, OFFSET_SECS,
-                                  SONG_ID, SONG_NAME, TOPN)
-from dejavu.database import get_database
-from dejavu.fingerprint import fingerprint
+import dejavu.logic.decoder as decoder
+from dejavu.base_classes.base_database import get_database
+from dejavu.config.settings import (CONFIDENCE, DEFAULT_FS,
+                                    DEFAULT_OVERLAP_RATIO, DEFAULT_WINDOW_SIZE,
+                                    FIELD_FILE_SHA1, OFFSET, OFFSET_SECS,
+                                    SONG_ID, SONG_NAME, TOPN)
+from dejavu.logic.fingerprint import fingerprint
 
 
 class Dejavu:
@@ -71,7 +71,7 @@ class Dejavu:
                 continue
             except StopIteration:
                 break
-            except:
+            except Exception:
                 print("Failed fingerprinting")
                 # Print traceback because we can't reraise it here
                 traceback.print_exc(file=sys.stdout)
@@ -119,6 +119,7 @@ class Dejavu:
         diff_counter = {}
         largest_count = 0
 
+        # TODO: review logic to get topn results.
         for tup in matches:
             sid, diff = tup
             if diff not in diff_counter:

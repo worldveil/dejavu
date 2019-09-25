@@ -4,5 +4,6 @@
         "user": "root",
         "password": "rootpass",
         "database": "dejavu"
-    }
+    },
+    "database_type": "mysql"
 }

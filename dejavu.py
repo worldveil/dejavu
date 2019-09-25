@@ -1,16 +1,12 @@
-#!/usr/bin/python
-
 import argparse
 import json
-import os
+from os.path import isdir
 import sys
-import warnings
 from argparse import RawTextHelpFormatter
 
 from dejavu import Dejavu
-from dejavu.recognize import FileRecognizer, MicrophoneRecognizer
-
-warnings.filterwarnings("ignore")
+from dejavu.logic.recognizer.microphone_recognizer import MicrophoneRecognizer
+from dejavu.logic.recognizer.file_recognizer import FileRecognizer
 
 DEFAULT_CONFIG_FILE = "dejavu.cnf.SAMPLE"
 
@@ -58,7 +54,6 @@ if __name__ == '__main__':
     config_file = args.config
     if config_file is None:
         config_file = DEFAULT_CONFIG_FILE
-        # print ("Using default config file: {config_file}")
 
     djv = init(config_file)
     if args.fingerprint:
@@ -71,22 +66,19 @@ if __name__ == '__main__':
 
         elif len(args.fingerprint) == 1:
             filepath = args.fingerprint[0]
-            if os.path.isdir(filepath):
+            if isdir(filepath):
                 print("Please specify an extension if you'd like to fingerprint a directory!")
                 sys.exit(1)
             djv.fingerprint_file(filepath)
 
     elif args.recognize:
         # Recognize audio source
-        song = None
+        songs = None
         source = args.recognize[0]
         opt_arg = args.recognize[1]
 
         if source in ('mic', 'microphone'):
-            song = djv.recognize(MicrophoneRecognizer, seconds=opt_arg)
+            songs = djv.recognize(MicrophoneRecognizer, seconds=opt_arg)
         elif source == 'file':
-            song = djv.recognize(FileRecognizer, opt_arg)
-        decoded_song = repr(song).decode('string_escape')
-        print(decoded_song)
-
-    sys.exit(0)
+            songs = djv.recognize(FileRecognizer, opt_arg)
+        print(songs)
