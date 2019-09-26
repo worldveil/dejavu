@@ -69,7 +69,6 @@ class CommonDatabase(BaseDatabase, metaclass=abc.ABCMeta):
         with self.cursor() as cur:
             cur.execute(self.SELECT_NUM_FINGERPRINTS)
             count = cur.fetchone()[0] if cur.rowcount != 0 else 0
-            cur.close()
 
         return count
 
@@ -100,16 +99,16 @@ class CommonDatabase(BaseDatabase, metaclass=abc.ABCMeta):
             cur.execute(self.SELECT_SONG, (sid,))
             return cur.fetchone()
 
-    def insert(self, hash, sid, offset):
+    def insert(self, fingerprint, sid, offset):
         """
         Inserts a single fingerprint into the database.
 
-          hash: Part of a sha1 hash, in hexadecimal format
+          fingerprint: Part of a sha1 hash, in hexadecimal format
            sid: Song identifier this fingerprint is off
-        offset: The offset this hash is from
+        offset: The offset this fingerprint is from
         """
         with self.cursor() as cur:
-            cur.execute(self.INSERT_FINGERPRINT, (hash, sid, offset))
+            cur.execute(self.INSERT_FINGERPRINT, (fingerprint, sid, offset))
 
     @abc.abstractmethod
     def insert_song(self, song_name):
@@ -124,9 +123,9 @@ class CommonDatabase(BaseDatabase, metaclass=abc.ABCMeta):
     def query(self, fingerprint):
         """
         Returns all matching fingerprint entries associated with
-        the given hash as parameter.
+        the given fingerprint as parameter.
 
-        hash: Part of a sha1 hash, in hexadecimal format
+        fingerprint: Part of a sha1 hash, in hexadecimal format
         """
         if fingerprint:
             with self.cursor() as cur:
