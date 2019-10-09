@@ -6,8 +6,8 @@ from psycopg2.extras import DictCursor
 from dejavu.base_classes.common_database import CommonDatabase
 from dejavu.config.settings import (FIELD_FILE_SHA1, FIELD_FINGERPRINTED,
                                     FIELD_HASH, FIELD_OFFSET, FIELD_SONG_ID,
-                                    FIELD_SONGNAME, FINGERPRINTS_TABLENAME,
-                                    SONGS_TABLENAME)
+                                    FIELD_SONGNAME, FIELD_TOTAL_HASHES,
+                                    FINGERPRINTS_TABLENAME, SONGS_TABLENAME)
 
 
 class PostgreSQLDatabase(CommonDatabase):
@@ -20,6 +20,7 @@ class PostgreSQLDatabase(CommonDatabase):
         ,   "{FIELD_SONGNAME}" VARCHAR(250) NOT NULL
         ,   "{FIELD_FINGERPRINTED}" SMALLINT DEFAULT 0
         ,   "{FIELD_FILE_SHA1}" BYTEA
+        ,   "{FIELD_TOTAL_HASHES}" INT NOT NULL DEFAULT 0
         ,   "date_created" TIMESTAMP NOT NULL DEFAULT now()
         ,   "date_modified" TIMESTAMP NOT NULL DEFAULT now()
         ,   CONSTRAINT "pk_{SONGS_TABLENAME}_{FIELD_SONG_ID}" PRIMARY KEY ("{FIELD_SONG_ID}")
@@ -58,8 +59,8 @@ class PostgreSQLDatabase(CommonDatabase):
     """
 
     INSERT_SONG = f"""
-        INSERT INTO "{SONGS_TABLENAME}" ("{FIELD_SONGNAME}", "{FIELD_FILE_SHA1}")
-        VALUES (%s, decode(%s, 'hex'))
+        INSERT INTO "{SONGS_TABLENAME}" ("{FIELD_SONGNAME}", "{FIELD_FILE_SHA1}","{FIELD_TOTAL_HASHES}")
+        VALUES (%s, decode(%s, 'hex'), %s)
         RETURNING "{FIELD_SONG_ID}";
     """
 
@@ -79,7 +80,10 @@ class PostgreSQLDatabase(CommonDatabase):
     SELECT_ALL = f'SELECT "{FIELD_SONG_ID}", "{FIELD_OFFSET}" FROM "{FINGERPRINTS_TABLENAME}";'
 
     SELECT_SONG = f"""
-        SELECT "{FIELD_SONGNAME}", upper(encode("{FIELD_FILE_SHA1}", 'hex')) AS "{FIELD_FILE_SHA1}"
+        SELECT
+            "{FIELD_SONGNAME}"
+        ,   upper(encode("{FIELD_FILE_SHA1}", 'hex')) AS "{FIELD_FILE_SHA1}"
+        ,   "{FIELD_TOTAL_HASHES}"
         FROM "{SONGS_TABLENAME}"
         WHERE "{FIELD_SONG_ID}" = %s;
     """
@@ -97,6 +101,8 @@ class PostgreSQLDatabase(CommonDatabase):
             "{FIELD_SONG_ID}"
         ,   "{FIELD_SONGNAME}"
         ,   upper(encode("{FIELD_FILE_SHA1}", 'hex')) AS "{FIELD_FILE_SHA1}"
+        ,   "{FIELD_TOTAL_HASHES}"
+        ,   "date_created"
         FROM "{SONGS_TABLENAME}"
         WHERE "{FIELD_FINGERPRINTED}" = 1;
     """
@@ -113,9 +119,13 @@ class PostgreSQLDatabase(CommonDatabase):
         WHERE "{FIELD_SONG_ID}" = %s;
     """
 
-    # DELETE
+    # DELETES
     DELETE_UNFINGERPRINTED = f"""
         DELETE FROM "{SONGS_TABLENAME}" WHERE "{FIELD_FINGERPRINTED}" = 0;
+    """
+
+    DELETE_SONGS = f"""
+        DELETE FROM "{SONGS_TABLENAME}" WHERE "{FIELD_SONG_ID}" IN (%s);
     """
 
     # IN
@@ -126,17 +136,23 @@ class PostgreSQLDatabase(CommonDatabase):
         self.cursor = cursor_factory(**options)
         self._options = options
 
-    def after_fork(self):
+    def after_fork(self) -> None:
         # Clear the cursor cache, we don't want any stale connections from
         # the previous process.
         Cursor.clear_cache()
 
-    def insert_song(self, song_name, file_hash):
+    def insert_song(self, song_name: str, file_hash: str, total_hashes: int) -> int:
         """
-        Inserts song in the database and returns the ID of the inserted record.
+        Inserts a song name into the database, returns the new
+        identifier of the song.
+
+        :param song_name: The name of the song.
+        :param file_hash: Hash from the fingerprinted file.
+        :param total_hashes: amount of hashes to be inserted on fingerprint table.
+        :return: the inserted id.
         """
         with self.cursor() as cur:
-            cur.execute(self.INSERT_SONG, (song_name, file_hash))
+            cur.execute(self.INSERT_SONG, (song_name, file_hash, total_hashes))
             return cur.fetchone()[0]
 
     def __getstate__(self):

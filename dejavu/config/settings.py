@@ -1,8 +1,26 @@
 # Dejavu
+
+# DEJAVU JSON RESPONSE
 SONG_ID = "song_id"
 SONG_NAME = 'song_name'
-CONFIDENCE = 'confidence'
-MATCH_TIME = 'match_time'
+RESULTS = 'results'
+
+HASHES_MATCHED = 'hashes_matched_in_input'
+
+# Hashes fingerprinted in the db.
+FINGERPRINTED_HASHES = 'fingerprinted_hashes_in_db'
+# Percentage regarding hashes matched vs hashes fingerprinted in the db.
+FINGERPRINTED_CONFIDENCE = 'fingerprinted_confidence'
+
+# Hashes generated from the input.
+INPUT_HASHES = 'input_total_hashes'
+# Percentage regarding hashes matched vs hashes from the input.
+INPUT_CONFIDENCE = 'input_confidence'
+
+TOTAL_TIME = 'total_time'
+FINGERPRINT_TIME = 'fingerprint_time'
+QUERY_TIME = 'query_time'
+ALIGN_TIME = 'align_time'
 OFFSET = 'offset'
 OFFSET_SECS = 'offset_seconds'
 
@@ -20,6 +38,7 @@ FIELD_SONG_ID = 'song_id'
 FIELD_SONGNAME = 'song_name'
 FIELD_FINGERPRINTED = "fingerprinted"
 FIELD_FILE_SHA1 = 'file_sha1'
+FIELD_TOTAL_HASHES = 'total_hashes'
 
 # TABLE FINGERPRINTS
 FINGERPRINTS_TABLENAME = "fingerprints"
@@ -43,7 +62,7 @@ DEFAULT_OVERLAP_RATIO = 0.5
 
 # Degree to which a fingerprint can be paired with its neighbors --
 # higher will cause more fingerprints, but potentially better accuracy.
-DEFAULT_FAN_VALUE = 15
+DEFAULT_FAN_VALUE = 5  # 15 was the original value.
 
 # Minimum amplitude in spectrogram in order to be considered a peak.
 # This can be raised to reduce number of fingerprints, but can negatively
@@ -53,7 +72,7 @@ DEFAULT_AMP_MIN = 10
 # Number of cells around an amplitude peak in the spectrogram in order
 # for Dejavu to consider it a spectral peak. Higher values mean less
 # fingerprints and faster matching, but can potentially affect accuracy.
-PEAK_NEIGHBORHOOD_SIZE = 20
+PEAK_NEIGHBORHOOD_SIZE = 10  # 20 was the original value.
 
 # Thresholds on how close or far fingerprints can be in time in order
 # to be paired as a fingerprint. If your max is too low, higher values of

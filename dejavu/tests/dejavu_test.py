@@ -12,10 +12,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pydub import AudioSegment
 
-from dejavu.config.settings import (CONFIDENCE, DEFAULT_FS,
-                                    DEFAULT_OVERLAP_RATIO, DEFAULT_WINDOW_SIZE,
-                                    MATCH_TIME, OFFSET, SONG_NAME)
-from dejavu.logic.decoder import path_to_songname
+from dejavu.config.settings import (DEFAULT_FS, DEFAULT_OVERLAP_RATIO,
+                                    DEFAULT_WINDOW_SIZE, HASHES_MATCHED,
+                                    OFFSET, RESULTS, SONG_NAME, TOTAL_TIME)
+from dejavu.logic.decoder import get_audio_name_from_path
 
 
 class DejavuTest:
@@ -115,8 +115,8 @@ class DejavuTest:
             col = self.get_column_id([x for x in re.findall("[0-9]sec", f) if x in self.test_seconds][0])
 
             # format: XXXX_offset_length.mp3, we also take into account underscores within XXXX
-            splits = path_to_songname(f).split("_")
-            song = "_".join(splits[0:len(path_to_songname(f).split("_")) - 2])
+            splits = get_audio_name_from_path(f).split("_")
+            song = "_".join(splits[0:len(get_audio_name_from_path(f).split("_")) - 2])
             line = self.get_line_id(song)
             result = subprocess.check_output([
                 "python",
@@ -138,8 +138,8 @@ class DejavuTest:
                 result = json.loads(result.decode('utf-8').replace("'", '"').replace(': b"', ':"'))
 
                 # which song did we predict? We consider only the first match.
-                result = result[0]
-                song_result = result[SONG_NAME]
+                match = result[RESULTS][0]
+                song_result = match[SONG_NAME]
                 log_msg(f'song: {song}')
                 log_msg(f'song_result: {song_result}')
 
@@ -153,22 +153,22 @@ class DejavuTest:
                     log_msg('correct match')
                     print(self.result_match)
                     self.result_match[line][col] = 'yes'
-                    self.result_query_duration[line][col] = round(result[MATCH_TIME], 3)
-                    self.result_match_confidence[line][col] = result[CONFIDENCE]
+                    self.result_query_duration[line][col] = round(result[TOTAL_TIME], 3)
+                    self.result_match_confidence[line][col] = match[HASHES_MATCHED]
 
                     # using replace in f for getting rid of underscores in name
                     song_start_time = re.findall("_[^_]+", f.replace(song, ""))
                     song_start_time = song_start_time[0].lstrip("_ ")
 
-                    result_start_time = round((result[OFFSET] * DEFAULT_WINDOW_SIZE *
+                    result_start_time = round((match[OFFSET] * DEFAULT_WINDOW_SIZE *
                                                DEFAULT_OVERLAP_RATIO) / DEFAULT_FS, 0)
 
                     self.result_matching_times[line][col] = int(result_start_time) - int(song_start_time)
                     if abs(self.result_matching_times[line][col]) == 1:
                         self.result_matching_times[line][col] = 0
 
-                    log_msg(f'query duration: {round(result[MATCH_TIME], 3)}')
-                    log_msg(f'confidence: {result[CONFIDENCE]}')
+                    log_msg(f'query duration: {round(result[TOTAL_TIME], 3)}')
+                    log_msg(f'confidence: {match[HASHES_MATCHED]}')
                     log_msg(f'song start_time: {song_start_time}')
                     log_msg(f'result start time: {result_start_time}')
 

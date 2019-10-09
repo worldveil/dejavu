@@ -1,8 +1,8 @@
 import json
 
 from dejavu import Dejavu
-from dejavu.logic.recognizer.microphone_recognizer import MicrophoneRecognizer
 from dejavu.logic.recognizer.file_recognizer import FileRecognizer
+from dejavu.logic.recognizer.microphone_recognizer import MicrophoneRecognizer
 
 # load config from a JSON file (or anything outputting a python dictionary)
 with open("dejavu.cnf.SAMPLE") as f:
@@ -17,18 +17,26 @@ if __name__ == '__main__':
     djv.fingerprint_directory("test", [".wav"])
 
     # Recognize audio from a file
-    song = djv.recognize(FileRecognizer, "mp3/Josh-Woodward--I-Want-To-Destroy-Something-Beautiful.mp3")
-    print(f"From file we recognized: {song}\n")
+    results = djv.recognize(FileRecognizer, "mp3/Josh-Woodward--I-Want-To-Destroy-Something-Beautiful.mp3")
+    print(f"From file we recognized: {results}\n")
 
     # Or recognize audio from your microphone for `secs` seconds
     secs = 5
-    song = djv.recognize(MicrophoneRecognizer, seconds=secs)
-    if song is None:
+    results = djv.recognize(MicrophoneRecognizer, seconds=secs)
+    if results is None:
         print("Nothing recognized -- did you play the song out loud so your mic could hear it? :)")
     else:
-        print(f"From mic with {secs} seconds we recognized: {song}\n")
+        print(f"From mic with {secs} seconds we recognized: {results}\n")
 
     # Or use a recognizer without the shortcut, in anyway you would like
     recognizer = FileRecognizer(djv)
-    song = recognizer.recognize_file("mp3/Josh-Woodward--I-Want-To-Destroy-Something-Beautiful.mp3")
-    print(f"No shortcut, we recognized: {song}\n")
+    results = recognizer.recognize_file("mp3/Josh-Woodward--I-Want-To-Destroy-Something-Beautiful.mp3")
+    print(f"No shortcut, we recognized: {results}\n")
+
+    # To list all fingerprinted songs in the db you can use the following:
+    # fingerprinted_songs = djv.get_fingerprinted_songs()
+    # print(fingerprinted_songs)
+
+    # And to delete a song or a set of songs you can use the following:
+    # song_ids_to_delete = [1]
+    # djv.delete_songs_by_ids(song_ids_to_delete)

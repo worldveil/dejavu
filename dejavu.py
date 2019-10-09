@@ -1,12 +1,12 @@
 import argparse
 import json
-from os.path import isdir
 import sys
 from argparse import RawTextHelpFormatter
+from os.path import isdir
 
 from dejavu import Dejavu
-from dejavu.logic.recognizer.microphone_recognizer import MicrophoneRecognizer
 from dejavu.logic.recognizer.file_recognizer import FileRecognizer
+from dejavu.logic.recognizer.microphone_recognizer import MicrophoneRecognizer
 
 DEFAULT_CONFIG_FILE = "dejavu.cnf.SAMPLE"
 
@@ -41,7 +41,7 @@ if __name__ == '__main__':
                              '--fingerprint /path/to/directory')
     parser.add_argument('-r', '--recognize', nargs=2,
                         help='Recognize what is '
-                             'playing through the microphone\n'
+                             'playing through the microphone or in a file.\n'
                              'Usage: \n'
                              '--recognize mic number_of_seconds \n'
                              '--recognize file path/to/file \n')

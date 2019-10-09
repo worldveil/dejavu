@@ -93,6 +93,7 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
     if PEAK_SORT:
         peaks.sort(key=itemgetter(1))
 
+    hashes = []
     for i in range(len(peaks)):
         for j in range(1, fan_value):
             if (i + j) < len(peaks):
@@ -105,4 +106,7 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
 
                 if MIN_HASH_TIME_DELTA <= t_delta <= MAX_HASH_TIME_DELTA:
                     h = hashlib.sha1(f"{str(freq1)}|{str(freq2)}|{str(t_delta)}".encode('utf-8'))
-                    yield (h.hexdigest()[0:FINGERPRINT_REDUCTION], t1)
+
+                    hashes.append((h.hexdigest()[0:FINGERPRINT_REDUCTION], t1))
+
+    return hashes
