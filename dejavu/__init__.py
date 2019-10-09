@@ -54,12 +54,12 @@ class Dejavu:
         """
         return self.db.get_songs()
 
-    def delete_songs_by_ids(self, song_ids: List[int]) -> None:
+    def delete_songs_by_id(self, song_ids: List[int]) -> None:
         """
         Deletes all audios given their ids.
         :param song_ids: song ids to delete from the database.
         """
-        self.db.delete_songs_by_ids(song_ids)
+        self.db.delete_songs_by_id(song_ids)
 
     def fingerprint_directory(self, path: str, extensions: str, nprocesses: int = None) -> None:
         """

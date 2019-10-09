@@ -217,7 +217,7 @@ class CommonDatabase(BaseDatabase, metaclass=abc.ABCMeta):
 
             return results, dedup_hashes
 
-    def delete_songs_by_ids(self, song_ids: List[int], batch_size: int = 1000) -> None:
+    def delete_songs_by_id(self, song_ids: List[int], batch_size: int = 1000) -> None:
         """
         Given a list of song ids it deletes all songs specified and their corresponding fingerprints.
         :param song_ids: song ids to be deleted from the database.
