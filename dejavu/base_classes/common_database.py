@@ -220,6 +220,7 @@ class CommonDatabase(BaseDatabase, metaclass=abc.ABCMeta):
     def delete_songs_by_id(self, song_ids: List[int], batch_size: int = 1000) -> None:
         """
         Given a list of song ids it deletes all songs specified and their corresponding fingerprints.
+
         :param song_ids: song ids to be deleted from the database.
         :param batch_size: number of query's batches.
         """

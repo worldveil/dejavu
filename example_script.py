@@ -32,11 +32,3 @@ if __name__ == '__main__':
     recognizer = FileRecognizer(djv)
     results = recognizer.recognize_file("mp3/Josh-Woodward--I-Want-To-Destroy-Something-Beautiful.mp3")
     print(f"No shortcut, we recognized: {results}\n")
-
-    # To list all fingerprinted songs in the db you can use the following:
-    # fingerprinted_songs = djv.get_fingerprinted_songs()
-    # print(fingerprinted_songs)
-
-    # And to delete a song or a set of songs you can use the following:
-    # song_ids_to_delete = [1]
-    # djv.delete_songs_by_ids(song_ids_to_delete)

@@ -48,6 +48,14 @@ FIELD_HASH = 'hash'
 FIELD_OFFSET = 'offset'
 
 # FINGERPRINTS CONFIG:
+# This is used as connectivity parameter for scipy.generate_binary_structure function. This parameter
+# changes the morphology mask when looking for maximum peaks on the spectrogram matrix.
+# Possible values are: [1, 2]
+# Where 1 sets a diamond morphology which implies that diagonal elements are not considered as neighbors (this
+# is the value used in the original dejavu code).
+# And 2 sets a square mask, i.e. all elements are considered neighbors.
+CONNECTIVITY_MASK = 2
+
 # Sampling rate, related to the Nyquist conditions, which affects
 # the range frequencies we can detect.
 DEFAULT_FS = 44100
@@ -60,8 +68,8 @@ DEFAULT_WINDOW_SIZE = 4096
 # matching, but potentially more fingerprints.
 DEFAULT_OVERLAP_RATIO = 0.5
 
-# Degree to which a fingerprint can be paired with its neighbors --
-# higher will cause more fingerprints, but potentially better accuracy.
+# Degree to which a fingerprint can be paired with its neighbors. Higher values will
+# cause more fingerprints, but potentially better accuracy.
 DEFAULT_FAN_VALUE = 5  # 15 was the original value.
 
 # Minimum amplitude in spectrogram in order to be considered a peak.

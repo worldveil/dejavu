@@ -34,6 +34,7 @@ def unique_hash(file_path: str, block_size: int = 2**20) -> str:
 def find_files(path: str, extensions: List[str]) -> List[Tuple[str, str]]:
     """
     Get all files that meet the specified extensions.
+
     :param path: path to a directory with audio files.
     :param extensions: file extensions to look for.
     :return: a list of tuples with file name and its extension.
@@ -97,6 +98,8 @@ def read(file_name: str, limit: int = None) -> Tuple[List[List[int]], int, str]:
 def get_audio_name_from_path(file_path: str) -> str:
     """
     Extracts song name from a file path.
+
     :param file_path: path to an audio file.
+    :return: file name
     """
     return os.path.splitext(os.path.basename(file_path))[0]

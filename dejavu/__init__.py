@@ -50,6 +50,7 @@ class Dejavu:
     def get_fingerprinted_songs(self) -> List[Dict[str, any]]:
         """
         To pull all fingerprinted songs from the database.
+
         :return: a list of fingerprinted audios from the database.
         """
         return self.db.get_songs()
@@ -57,6 +58,7 @@ class Dejavu:
     def delete_songs_by_id(self, song_ids: List[int]) -> None:
         """
         Deletes all audios given their ids.
+
         :param song_ids: song ids to delete from the database.
         """
         self.db.delete_songs_by_id(song_ids)
@@ -64,6 +66,7 @@ class Dejavu:
     def fingerprint_directory(self, path: str, extensions: str, nprocesses: int = None) -> None:
         """
         Given a directory and a set of extensions it fingerprints all files that match each extension specified.
+
         :param path: path to the directory.
         :param extensions: list of file extensions to consider.
         :param nprocesses: amount of processes to fingerprint the files within the directory.
@@ -119,6 +122,7 @@ class Dejavu:
         """
         Given a path to a file the method generates hashes for it and stores them in the database
         for later being queried.
+
         :param file_path: path to the file.
         :param song_name: song name associated to the audio file.
         """
@@ -143,6 +147,7 @@ class Dejavu:
     def generate_fingerprints(self, samples: List[int], Fs=DEFAULT_FS) -> Tuple[List[Tuple[str, int]], float]:
         f"""
         Generate the fingerprints for the given sample data (channel).
+
         :param samples: list of ints which represents the channel info of the given audio file.
         :param Fs: sampling rate which defaults to {DEFAULT_FS}.
         :return: a list of tuples for hash and its corresponding offset, together with the generation time.
@@ -155,6 +160,7 @@ class Dejavu:
     def find_matches(self, hashes: List[Tuple[str, int]]) -> Tuple[List[Tuple[int, int]], Dict[str, int], float]:
         """
         Finds the corresponding matches on the fingerprinted audios for the given hashes.
+
         :param hashes: list of tuples for hashes and their corresponding offsets
         :return: a tuple containing the matches found against the db, a dictionary which counts the different
          hashes matched for each song (with the song id as key), and the time that the query took.
@@ -171,6 +177,7 @@ class Dejavu:
         """
         Finds hash matches that align in time with other matches and finds
         consensus about which hashes are "true" signal from the audio.
+
         :param matches: matches from the database
         :param dedup_hashes: dictionary containing the hashes matched without duplicates for each song
         (key is the song id).
