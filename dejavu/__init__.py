@@ -121,7 +121,7 @@ class Dejavu:
     def fingerprint_file(self, file_path: str, song_name: str = None) -> None:
         """
         Given a path to a file the method generates hashes for it and stores them in the database
-        for later being queried.
+        for later be queried.
 
         :param file_path: path to the file.
         :param song_name: song name associated to the audio file.
