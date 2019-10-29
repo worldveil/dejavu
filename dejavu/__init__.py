@@ -202,11 +202,11 @@ class Dejavu(object):
                          fingerprint.DEFAULT_OVERLAP_RATIO, 5)
         song = {
             Dejavu.SONG_ID : song_id,
-            Dejavu.SONG_NAME : songname,
+            Dejavu.SONG_NAME : songname.encode("utf8"),
             Dejavu.CONFIDENCE : largest_count,
             Dejavu.OFFSET : int(largest),
             Dejavu.OFFSET_SECS : nseconds,
-            Database.FIELD_FILE_SHA1 : song.get(Database.FIELD_FILE_SHA1, None),}
+            Database.FIELD_FILE_SHA1 : song.get(Database.FIELD_FILE_SHA1, None).encode("utf8"),}
         return song
 
     def align_matches_by_overlap(self, matches):

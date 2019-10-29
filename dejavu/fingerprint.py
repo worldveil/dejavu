@@ -56,9 +56,9 @@ MAX_HASH_TIME_DELTA = 200
 PEAK_SORT = True
 
 ######################################################################
-# Number of bits to throw away from the front of the SHA1 hash in the
-# fingerprint calculation. The more you throw away, the less storage, but
-# potentially higher collisions and misclassifications when identifying songs.
+# Number of bits to grab from the front of the SHA1 hash in the
+# fingerprint calculation. The more you grab, the more memory storage, 
+# with potentially lesser collisions of matches.
 FINGERPRINT_REDUCTION = 20
 
 DEFAULT_OFFSET_ADJUSTMENT = 0
@@ -99,7 +99,7 @@ def get_2D_peaks(arr2D, neighborhood_size, plot=False, amp_min=DEFAULT_AMP_MIN):
     # neighborhood = iterate_structure(struct, PEAK_NEIGHBORHOOD_SIZE)
     neighborhood = iterate_structure(struct, neighborhood_size)    
 
-    # find local maxima using our fliter shape
+    # find local maxima using our filter shape
     local_max = maximum_filter(arr2D, footprint=neighborhood) == arr2D
     background = (arr2D == 0)
     eroded_background = binary_erosion(background, structure=neighborhood,
@@ -117,12 +117,14 @@ def get_2D_peaks(arr2D, neighborhood_size, plot=False, amp_min=DEFAULT_AMP_MIN):
     # filter peaks
     amps = amps.flatten()
     peaks = zip(i, j, amps)
-    peaks_filtered = [x for x in peaks if x[2] > amp_min]  # freq, time, amp
-
+    peaks_filtered = filter(lambda x: x[2]>amp_min, peaks) # freq, time, amp
     # get indices for frequency and time
-    frequency_idx = [x[1] for x in peaks_filtered]
-    time_idx = [x[0] for x in peaks_filtered]
-
+    frequency_idx = []
+    time_idx = []
+    for x in peaks_filtered:
+        frequency_idx.append(x[1])
+        time_idx.append(x[0])
+    
     if plot:
         # scatter of the peaks
         fig, ax = plt.subplots()
