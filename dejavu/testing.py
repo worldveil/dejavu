@@ -113,12 +113,13 @@ def autolabeldoubles(rects, ax):
             '%s' % round(float(height), 3), ha='center', va='bottom')
 
 class DejavuTest(object):
-    def __init__(self, folder, seconds):
+    def __init__(self, folder, seconds, config_file=None):
         super(DejavuTest, self).__init__()
 
         self.test_folder = folder
         self.test_seconds = seconds
         self.test_songs = []
+        self.test_config_file = config_file
 
         print("test_seconds", self.test_seconds)
 
@@ -137,18 +138,18 @@ class DejavuTest(object):
         print("lines:", self.n_lines)
 
         # variable match results (yes, no, invalid)
-        self.result_match = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)]
+        self.result_match = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)] 
 
-        print("result_match matrix:", self.result_match)
+        print("result_match matrix:", self.result_match )
 
         # variable match precision (if matched in the corrected time)
-        self.result_matching_times = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)]
+        self.result_matching_times = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)] 
 
         # variable mahing time (query time) 
-        self.result_query_duration = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)]
+        self.result_query_duration = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)] 
 
         # variable confidence
-        self.result_match_confidence = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)]
+        self.result_match_confidence = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)] 
 
         self.begin()
 
@@ -202,6 +203,10 @@ class DejavuTest(object):
             fig.savefig(fig_name)
 
     def begin(self):
+        extra_args = []
+        if self.test_config_file:
+            extra_args.extend(['-c', self.test_config_file])
+            
         for f in self.test_files:
             log_msg('--------------------------------------------------')
             log_msg('file: %s' % f)
@@ -216,10 +221,9 @@ class DejavuTest(object):
                 "dejavu.py",
                 '-r',
                 'file', 
-                self.test_folder + "/" + f])
+                self.test_folder + "/" + f,
+                *extra_args])
 
-            # Convert from byte to string.
-            #
             result = result.decode()
 
             if result.strip() == "None":
@@ -230,14 +234,15 @@ class DejavuTest(object):
                 self.result_match_confidence[line][col] = 0
             
             else:
-                result = result.strip()
+                # print("Result: {}".format(result))
+                result = result.strip()                
                 result = result.replace(" \'", ' "')
                 result = result.replace("{\'", '{"')
                 result = result.replace("\':", '":')
                 result = result.replace("\',", '",')
-                result = result.replace("\'}", '"}')
 
                 # which song did we predict?
+                print("Result", result)
                 result = ast.literal_eval(result)
                 song_result = result["song_name"]
                 log_msg('song: %s' % song)

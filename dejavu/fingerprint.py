@@ -61,11 +61,15 @@ PEAK_SORT = True
 # potentially higher collisions and misclassifications when identifying songs.
 FINGERPRINT_REDUCTION = 20
 
+DEFAULT_OFFSET_ADJUSTMENT = 0
+
 def fingerprint(channel_samples, Fs=DEFAULT_FS,
                 wsize=DEFAULT_WINDOW_SIZE,
                 wratio=DEFAULT_OVERLAP_RATIO,
                 fan_value=DEFAULT_FAN_VALUE,
-                amp_min=DEFAULT_AMP_MIN):
+                amp_min=DEFAULT_AMP_MIN,
+                offset_adjustment=DEFAULT_OFFSET_ADJUSTMENT,
+                neighborhood=PEAK_NEIGHBORHOOD_SIZE):
     """
     FFT the channel, log transform output, find local maxima, then return
     locally sensitive hashes.
@@ -83,16 +87,17 @@ def fingerprint(channel_samples, Fs=DEFAULT_FS,
     arr2D[arr2D == -np.inf] = 0  # replace infs with zeros
 
     # find local maxima
-    local_maxima = get_2D_peaks(arr2D, plot=False, amp_min=amp_min)
+    local_maxima = get_2D_peaks(arr2D, neighborhood_size=neighborhood, plot=False, amp_min=amp_min)
 
     # return hashes
-    return generate_hashes(local_maxima, fan_value=fan_value)
+    return generate_hashes(local_maxima, fan_value=fan_value, offset_adjustment=offset_adjustment)
 
 
-def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
+def get_2D_peaks(arr2D, neighborhood_size, plot=False, amp_min=DEFAULT_AMP_MIN):
     # http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.morphology.iterate_structure.html#scipy.ndimage.morphology.iterate_structure
     struct = generate_binary_structure(2, 1)
-    neighborhood = iterate_structure(struct, PEAK_NEIGHBORHOOD_SIZE)
+    # neighborhood = iterate_structure(struct, PEAK_NEIGHBORHOOD_SIZE)
+    neighborhood = iterate_structure(struct, neighborhood_size)    
 
     # find local maxima using our fliter shape
     local_max = maximum_filter(arr2D, footprint=neighborhood) == arr2D
@@ -101,7 +106,9 @@ def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
                                        border_value=1)
 
     # Boolean mask of arr2D with True at peaks
-    detected_peaks = local_max - eroded_background
+    # NumPy deprecated boolean subtraction by '-' operator
+    #   They suggest the bitwise_xor, the `^` operator, or the logical_xor
+    detected_peaks = local_max ^ eroded_background
 
     # extract peaks
     amps = arr2D[detected_peaks]
@@ -130,27 +137,29 @@ def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
     return zip(frequency_idx, time_idx)
 
 
-def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
+def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE, offset_adjustment=DEFAULT_OFFSET_ADJUSTMENT):
     """
     Hash list structure:
        sha1_hash[0:20]    time_offset
     [(e05b341a9b77a51fd26, 32), ... ]
     """
-    if PEAK_SORT:
-        peaks = sorted(peaks, key=itemgetter(1))
+    _peaks = list(peaks)
 
-    for i in range(len(peaks)):
+    if PEAK_SORT:
+        _peaks.sort(key=itemgetter(1))
+
+    for i in range(len(_peaks)):
         for j in range(1, fan_value):
-            if (i + j) < len(peaks):
+            if (i + j) < len(_peaks):
                 
-                freq1 = peaks[i][IDX_FREQ_I]
-                freq2 = peaks[i + j][IDX_FREQ_I]
-                t1 = peaks[i][IDX_TIME_J]
-                t2 = peaks[i + j][IDX_TIME_J]
+                freq1 = _peaks[i][IDX_FREQ_I]
+                freq2 = _peaks[i + j][IDX_FREQ_I]
+                t1 = _peaks[i][IDX_TIME_J]
+                t2 = _peaks[i + j][IDX_TIME_J]
                 t_delta = t2 - t1
 
                 if t_delta >= MIN_HASH_TIME_DELTA and t_delta <= MAX_HASH_TIME_DELTA:
-                    h = hashlib.sha1(
-                        ("%s|%s|%s" % (str(freq1), str(freq2), str(t_delta))).encode('utf-8')
-                    )
-                    yield (h.hexdigest()[0:FINGERPRINT_REDUCTION], t1)
+                    hashstr = "%s|%s|%s" % (str(freq1), str(freq2), str(t_delta))
+                    h = hashlib.sha1( hashstr.encode() )
+                    yield (h.hexdigest()[0:FINGERPRINT_REDUCTION], t1 + offset_adjustment)
+                    # yield (hashstr, t1 + offset_adjustment)

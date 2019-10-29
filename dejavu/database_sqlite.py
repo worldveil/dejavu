@@ -1,14 +1,13 @@
 from __future__ import absolute_import
-from itertools import izip_longest
-import Queue
+from itertools import zip_longest
+import queue as Queue
 
-import MySQLdb as mysql
-from MySQLdb.cursors import DictCursor
+import sqlite3
 
 from dejavu.database import Database
 
 
-class SQLDatabase(Database):
+class SQLiteDatabase(Database):
     """
     Queries:
 
@@ -44,7 +43,7 @@ class SQLDatabase(Database):
         where fingerprints.hash = "08d3c833b71c60a7b620322ac0c0aba7bf5a3e73";
     """
 
-    type = "mysql"
+    type = "sqlite3"
 
     # tables
     FINGERPRINTS_TABLENAME = "fingerprints"
@@ -52,54 +51,53 @@ class SQLDatabase(Database):
 
     # fields
     FIELD_FINGERPRINTED = "fingerprinted"
+    FIELD_SONG_ID = "rowid"
 
     # creates
     CREATE_FINGERPRINTS_TABLE = """
         CREATE TABLE IF NOT EXISTS `%s` (
-             `%s` binary(10) not null,
+             `%s` binary not null,
              `%s` mediumint unsigned not null,
-             `%s` int unsigned not null,
-         INDEX (%s),
-         UNIQUE KEY `unique_constraint` (%s, %s, %s),
+             `%s` INTEGER not null,
+         UNIQUE(%s, %s, %s),
          FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE CASCADE
-    ) ENGINE=INNODB;""" % (
+    ) """ % (
         FINGERPRINTS_TABLENAME, Database.FIELD_HASH,
+        Database.FIELD_SONG_ID, Database.FIELD_OFFSET,
         Database.FIELD_SONG_ID, Database.FIELD_OFFSET, Database.FIELD_HASH,
-        Database.FIELD_SONG_ID, Database.FIELD_OFFSET, Database.FIELD_HASH,
-        Database.FIELD_SONG_ID, SONGS_TABLENAME, Database.FIELD_SONG_ID
+        Database.FIELD_SONG_ID, SONGS_TABLENAME, FIELD_SONG_ID
     )
 
     CREATE_SONGS_TABLE = """
-        CREATE TABLE IF NOT EXISTS `%s` (
-            `%s` mediumint unsigned not null auto_increment,
-            `%s` varchar(250) not null,
-            `%s` tinyint default 0,
-            `%s` binary(20) not null,
-        PRIMARY KEY (`%s`),
-        UNIQUE KEY `%s` (`%s`)
-    ) ENGINE=INNODB;""" % (
-        SONGS_TABLENAME, Database.FIELD_SONG_ID, Database.FIELD_SONGNAME, FIELD_FINGERPRINTED,
+        CREATE TABLE IF NOT EXISTS %s (
+                %s STRING NOT NULL,
+                %s INTEGER DEFAULT 0,
+                %s TEXT NOT NULL
+        )
+    """ % (
+        SONGS_TABLENAME,
+        Database.FIELD_SONGNAME,
+        FIELD_FINGERPRINTED,
         Database.FIELD_FILE_SHA1,
-        Database.FIELD_SONG_ID, Database.FIELD_SONG_ID, Database.FIELD_SONG_ID,
     )
 
     # inserts (ignores duplicates)
     INSERT_FINGERPRINT = """
-        INSERT IGNORE INTO %s (%s, %s, %s) values
-            (UNHEX(%%s), %%s, %%s);
+        INSERT OR IGNORE INTO %s (%s, %s, %s) values
+            (?, ?, ?);
     """ % (FINGERPRINTS_TABLENAME, Database.FIELD_HASH, Database.FIELD_SONG_ID, Database.FIELD_OFFSET)
 
-    INSERT_SONG = "INSERT INTO %s (%s, %s) values (%%s, UNHEX(%%s));" % (
+    INSERT_SONG = "INSERT INTO %s (%s, %s) values (?, ?)" % (
         SONGS_TABLENAME, Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1)
 
     # selects
     SELECT = """
-        SELECT %s, %s FROM %s WHERE %s = UNHEX(%%s);
+        SELECT %s, %s FROM %s WHERE %s = ?
     """ % (Database.FIELD_SONG_ID, Database.FIELD_OFFSET, FINGERPRINTS_TABLENAME, Database.FIELD_HASH)
 
     SELECT_MULTIPLE = """
-        SELECT HEX(%s), %s, %s FROM %s WHERE %s IN (%%s);
-    """ % (Database.FIELD_HASH, Database.FIELD_SONG_ID, Database.FIELD_OFFSET,
+        SELECT %s, %s, %s, %s FROM %s WHERE %s IN (%%s)
+    """ % (FIELD_SONG_ID, Database.FIELD_HASH, Database.FIELD_SONG_ID, Database.FIELD_OFFSET,
            FINGERPRINTS_TABLENAME, Database.FIELD_HASH)
 
     SELECT_ALL = """
@@ -107,20 +105,20 @@ class SQLDatabase(Database):
     """ % (Database.FIELD_SONG_ID, Database.FIELD_OFFSET, FINGERPRINTS_TABLENAME)
 
     SELECT_SONG = """
-        SELECT %s, HEX(%s) as %s FROM %s WHERE %s = %%s;
-    """ % (Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1, Database.FIELD_FILE_SHA1, SONGS_TABLENAME, Database.FIELD_SONG_ID)
+        SELECT %s, %s as %s FROM %s WHERE %s = ?
+    """ % (Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1, Database.FIELD_FILE_SHA1, SONGS_TABLENAME, FIELD_SONG_ID)
 
     SELECT_NUM_FINGERPRINTS = """
         SELECT COUNT(*) as n FROM %s
     """ % (FINGERPRINTS_TABLENAME)
 
     SELECT_UNIQUE_SONG_IDS = """
-        SELECT COUNT(DISTINCT %s) as n FROM %s WHERE %s = 1;
-    """ % (Database.FIELD_SONG_ID, SONGS_TABLENAME, FIELD_FINGERPRINTED)
+        SELECT COUNT(DISTINCT %s) AS n FROM %s WHERE %s = 1;
+    """ % (FIELD_SONG_ID, SONGS_TABLENAME, FIELD_FINGERPRINTED)
 
     SELECT_SONGS = """
-        SELECT %s, %s, HEX(%s) as %s FROM %s WHERE %s = 1;
-    """ % (Database.FIELD_SONG_ID, Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1, Database.FIELD_FILE_SHA1,
+        SELECT %s AS %s, %s, %s as %s FROM %s WHERE %s = 1;
+    """ % (FIELD_SONG_ID, Database.FIELD_SONG_ID, Database.FIELD_SONGNAME, Database.FIELD_FILE_SHA1, Database.FIELD_FILE_SHA1,
            SONGS_TABLENAME, FIELD_FINGERPRINTED)
 
     # drops
@@ -129,8 +127,8 @@ class SQLDatabase(Database):
 
     # update
     UPDATE_SONG_FINGERPRINTED = """
-        UPDATE %s SET %s = 1 WHERE %s = %%s
-    """ % (SONGS_TABLENAME, FIELD_FINGERPRINTED, Database.FIELD_SONG_ID)
+        UPDATE %s SET %s = 1 WHERE %s = ?
+    """ % (SONGS_TABLENAME, FIELD_FINGERPRINTED, FIELD_SONG_ID)
 
     # delete
     DELETE_UNFINGERPRINTED = """
@@ -138,7 +136,7 @@ class SQLDatabase(Database):
     """ % (SONGS_TABLENAME, FIELD_FINGERPRINTED)
 
     def __init__(self, **options):
-        super(SQLDatabase, self).__init__()
+        super(SQLiteDatabase, self).__init__()
         self.cursor = cursor_factory(**options)
         self._options = options
 
@@ -157,6 +155,7 @@ class SQLDatabase(Database):
         with self.cursor() as cur:
             cur.execute(self.CREATE_SONGS_TABLE)
             cur.execute(self.CREATE_FINGERPRINTS_TABLE)
+            # cur.execute(self.CREATE_LOGGING_TABLE)
             cur.execute(self.DELETE_UNFINGERPRINTED)
 
     def empty(self):
@@ -214,7 +213,7 @@ class SQLDatabase(Database):
         """
         Return songs that have the fingerprinted flag set TRUE (1).
         """
-        with self.cursor(cursor_type=DictCursor) as cur:
+        with self.cursor() as cur:
             cur.execute(self.SELECT_SONGS)
             for row in cur:
                 yield row
@@ -223,7 +222,7 @@ class SQLDatabase(Database):
         """
         Returns song by its ID.
         """
-        with self.cursor(cursor_type=DictCursor) as cur:
+        with self.cursor() as cur:
             cur.execute(self.SELECT_SONG, (sid,))
             return cur.fetchone()
 
@@ -232,7 +231,11 @@ class SQLDatabase(Database):
         Insert a (sha1, song_id, offset) row into database.
         """
         with self.cursor() as cur:
-            cur.execute(self.INSERT_FINGERPRINT, (hash, sid, offset))
+            cur.execute(self.INSERT_FINGERPRINT, (hash.encode(), sid, offset))
+
+    def insert_log(self, content):
+        with self.cursor() as cur:
+            cur.execute(self.INSERT_LOG, (content,))
 
     def insert_song(self, songname, file_hash):
         """
@@ -249,13 +252,14 @@ class SQLDatabase(Database):
         If hash is None, returns all entries in the
         database (be careful with that one!).
         """
-        # select all if no key
-        query = self.SELECT_ALL if hash is None else self.SELECT
-
         with self.cursor() as cur:
-            cur.execute(query)
-            for sid, offset in cur:
-                yield (sid, offset)
+            if hash is None:
+                cur.execute(self.SELECT_ALL)
+            else:
+                cur.execute(self.SELECT, [hash.encode()])
+
+            for result in cur.fetchall():
+                yield (result[Database.FIELD_SONG_ID], result[Database.FIELD_OFFSET])
 
     def get_iterable_kv_pairs(self):
         """
@@ -269,37 +273,76 @@ class SQLDatabase(Database):
         values into the database.
         """
         values = []
-        for hash, offset in hashes:
-            values.append((hash, sid, offset))
+        for ahash, offset in hashes:
+            values.append((ahash.encode(), sid, int(offset)))
 
         with self.cursor() as cur:
-            for split_values in grouper(values, 1000):
-                cur.executemany(self.INSERT_FINGERPRINT, split_values)
+            for split_values in grouper(values, 100):
+                cur.executemany(self.INSERT_FINGERPRINT, list(split_values))
 
-    def return_matches(self, hashes):
+    def self_matches(self, song_id):
+        with self.cursor() as cur:
+            self_matching_hashes = cur.execute("""
+                SELECT hash, offset FROM fingerprints 
+                WHERE song_id = ?
+                AND hash IN (
+                    SELECT hash FROM fingerprints 
+                    GROUP BY hash 
+                    HAVING COUNT(hash) > 1 
+                    ORDER BY COUNT(hash) DESC
+                )""", (song_id,)).fetchall()
+
+            for result in self_matching_hashes:
+                yield (result['hash'].decode(), result['offset'])
+
+    def return_matches(self, hashes, preserve_offsets=False):
         """
         Return the (song_id, offset_diff) tuples associated with
         a list of (sha1, sample_offset) values.
         """
-        # Create a dictionary of hash => offset pairs for later lookups
         mapper = {}
-        for hash, offset in hashes:
-            mapper[hash.upper()] = offset
+        for hxe in hashes:
+          try:
+            hash, offset = hxe
+            mapper[hash.encode()] = offset
+          except ValueError:
+            print("Type", type(hxe))
+            print("Length", len(hxe))
+            for hash, offset in hxe:
+                print("XHash", hash)
+                print("XOffset", offset)
+                break
+            raise
 
         # Get an iteratable of all the hashes we need
         values = mapper.keys()
 
         with self.cursor() as cur:
-            for split_values in grouper(values, 1000):
+            for split_values in grouper(values, 998):
+                split_list = list(split_values)
                 # Create our IN part of the query
                 query = self.SELECT_MULTIPLE
-                query = query % ', '.join(['UNHEX(%s)'] * len(split_values))
+                query = query % ', '.join(['?'] * len(split_list))
 
-                cur.execute(query, split_values)
-
-                for hash, sid, offset in cur:
+                for result in cur.execute(query, split_list).fetchall():
                     # (sid, db_offset - song_sampled_offset)
-                    yield (sid, offset - mapper[hash])
+                    try:
+                        returned_offset = result[Database.FIELD_OFFSET]
+                        returned_hash = result[Database.FIELD_HASH]
+                        original_offset = mapper[returned_hash]
+
+                        adjusted_offset = returned_offset - original_offset
+
+                        returned_song_id = result[Database.FIELD_SONG_ID]
+
+                        if preserve_offsets:
+                            yield (returned_song_id, adjusted_offset, original_offset, returned_offset)
+                        else:
+                            yield (returned_song_id, adjusted_offset)
+
+                    except TypeError:
+                        raise Exception("Result: {}\nOffset From Map: {}\nRehashed Hash: {}".format(result, original_offset, hash.encode()))
+
 
     def __getstate__(self):
         return (self._options,)
@@ -312,8 +355,7 @@ class SQLDatabase(Database):
 def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
     return (filter(None, values) for values
-            in izip_longest(fillvalue=fillvalue, *args))
-
+            in zip_longest(fillvalue=fillvalue, *args))
 
 def cursor_factory(**factory_options):
     def cursor(**options):
@@ -321,6 +363,17 @@ def cursor_factory(**factory_options):
         return Cursor(**options)
     return cursor
 
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+
+    return d
+    
+def setup_db(db_path, dict_factory = dict_factory):
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = dict_factory
+    return conn
 
 class Cursor(object):
     """
@@ -335,32 +388,30 @@ class Cursor(object):
     """
     _cache = Queue.Queue(maxsize=5)
 
-    def __init__(self, cursor_type=mysql.cursors.Cursor, **options):
+    def __init__(self, cursor_type=sqlite3.Cursor, **options):
         super(Cursor, self).__init__()
 
         try:
             conn = self._cache.get_nowait()
         except Queue.Empty:
-            conn = mysql.connect(**options)
+            # conn = sqlite3.connect(**options)
+            conn = setup_db(**options)
         else:
-            # Ping the connection before using it from the cache.
-            conn.ping(True)
+            nothing = None
 
         self.conn = conn
-        self.conn.autocommit(False)
-        self.cursor_type = cursor_type
 
     @classmethod
     def clear_cache(cls):
         cls._cache = Queue.Queue(maxsize=5)
 
     def __enter__(self):
-        self.cursor = self.conn.cursor(self.cursor_type)
+        self.cursor = self.conn.cursor()
         return self.cursor
 
     def __exit__(self, extype, exvalue, traceback):
-        # if we had a MySQL related error we try to rollback the cursor.
-        if extype is mysql.MySQLError:
+        # if we had a SQL related error we try to rollback the cursor.
+        if extype is sqlite3.Error:
             self.cursor.rollback()
 
         self.cursor.close()
