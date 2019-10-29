@@ -37,7 +37,7 @@ def get_length_audio(audiopath, extension):
     try:
         audio = AudioSegment.from_file(audiopath, extension.replace(".", ""))
     except:
-        print "Error in get_length_audio(): %s" % traceback.format_exc()
+        print("Error in get_length_audio(): %s" % traceback.format_exc())
         return None
     return int(len(audio) / 1000.0)
 
@@ -75,7 +75,7 @@ def generate_test_files(src, dest, nseconds, fmts=[".mp3", ".wav"], padding=10):
         testsources = get_files_recursive(src, fmt) 
         for audiosource in testsources:
 
-            print "audiosource:", audiosource
+            print("audiosource:", audiosource)
             
             filename, extension = os.path.splitext(os.path.basename(audiosource))
             length = get_length_audio(audiosource, extension) 
@@ -96,7 +96,7 @@ def log_msg(msg, log=True, silent=False):
     if log:
         logging.debug(msg)
     if not silent:
-        print msg
+        print(msg)
 
 def autolabel(rects, ax):
     # attach some text labels
@@ -113,42 +113,43 @@ def autolabeldoubles(rects, ax):
             '%s' % round(float(height), 3), ha='center', va='bottom')
 
 class DejavuTest(object):
-    def __init__(self, folder, seconds):
+    def __init__(self, folder, seconds, config_file=None):
         super(DejavuTest, self).__init__()
 
         self.test_folder = folder
         self.test_seconds = seconds
         self.test_songs = []
+        self.test_config_file = config_file
 
-        print "test_seconds", self.test_seconds
+        print("test_seconds", self.test_seconds)
 
         self.test_files = [
             f for f in os.listdir(self.test_folder) 
             if os.path.isfile(os.path.join(self.test_folder, f)) 
             and re.findall("[0-9]*sec", f)[0] in self.test_seconds]
 
-        print "test_files", self.test_files
+        print("test_files", self.test_files)
 
         self.n_columns = len(self.test_seconds)
         self.n_lines = int(len(self.test_files) / self.n_columns)
 
-        print "columns:", self.n_columns
-        print "length of test files:", len(self.test_files)
-        print "lines:", self.n_lines
+        print("columns:", self.n_columns)
+        print("length of test files:", len(self.test_files))
+        print("lines:", self.n_lines)
 
         # variable match results (yes, no, invalid)
-        self.result_match = [[0 for x in xrange(self.n_columns)] for x in xrange(self.n_lines)] 
+        self.result_match = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)] 
 
-        print "result_match matrix:", self.result_match 
+        print("result_match matrix:", self.result_match )
 
         # variable match precision (if matched in the corrected time)
-        self.result_matching_times = [[0 for x in xrange(self.n_columns)] for x in xrange(self.n_lines)] 
+        self.result_matching_times = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)] 
 
         # variable mahing time (query time) 
-        self.result_query_duration = [[0 for x in xrange(self.n_columns)] for x in xrange(self.n_lines)] 
+        self.result_query_duration = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)] 
 
         # variable confidence
-        self.result_match_confidence = [[0 for x in xrange(self.n_columns)] for x in xrange(self.n_lines)] 
+        self.result_match_confidence = [[0 for x in range(self.n_columns)] for x in range(self.n_lines)] 
 
         self.begin()
 
@@ -202,6 +203,10 @@ class DejavuTest(object):
             fig.savefig(fig_name)
 
     def begin(self):
+        extra_args = []
+        if self.test_config_file:
+            extra_args.extend(['-c', self.test_config_file])
+            
         for f in self.test_files:
             log_msg('--------------------------------------------------')
             log_msg('file: %s' % f)
@@ -216,7 +221,10 @@ class DejavuTest(object):
                 "dejavu.py",
                 '-r',
                 'file', 
-                self.test_folder + "/" + f])
+                self.test_folder + "/" + f,
+                *extra_args])
+
+            result = result.decode()
 
             if result.strip() == "None":
                 log_msg('No match')
@@ -226,13 +234,15 @@ class DejavuTest(object):
                 self.result_match_confidence[line][col] = 0
             
             else:
-                result = result.strip()
+                # print("Result: {}".format(result))
+                result = result.strip()                
                 result = result.replace(" \'", ' "')
                 result = result.replace("{\'", '{"')
                 result = result.replace("\':", '":')
                 result = result.replace("\',", '",')
 
                 # which song did we predict?
+                print("Result", result)
                 result = ast.literal_eval(result)
                 song_result = result["song_name"]
                 log_msg('song: %s' % song)
@@ -246,7 +256,7 @@ class DejavuTest(object):
                     self.result_match_confidence[line][col] = 0
                 else:
                     log_msg('correct match')
-                    print self.result_match
+                    print(self.result_match)
                     self.result_match[line][col] = 'yes'
                     self.result_query_duration[line][col] = round(result[Dejavu.MATCH_TIME],3)
                     self.result_match_confidence[line][col] = result[Dejavu.CONFIDENCE]

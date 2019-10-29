@@ -41,6 +41,93 @@ class FileRecognizer(BaseRecognizer):
     def recognize(self, filename):
         return self.recognize_file(filename)
 
+class RadioRecognizer(BaseRecognizer):
+    def __init__(self, dejavu):
+        super(RadioRecognizer, self).__init__(dejavu)
+
+    def recognize_file(self, filename, limit, offset):
+        l = time.time()
+        frames, self.Fs, file_hash = decoder.read(filename, limit=limit, skip=offset)
+        l = time.time() - l
+
+        t = time.time()
+        match = self._recognize(*frames)
+        t = time.time() - t
+
+        if match:
+            matches = self.dejavu.process_results(match, offset)
+
+            return matches, {'load_time': l, 'recognize_time': t}
+
+    def recognize(self, filename, limit, skip):
+        return self.recognize_file(filename, limit, skip)
+
+    def _recognize(self, *data):
+        matches = []
+        for i, d in enumerate(data):
+            print("Starting channel ", i)
+            matches.extend(self.dejavu.find_matches(d, Fs=self.Fs, preserve_offsets=True))
+            print("Finished channel ", i)            
+        return self.dejavu.align_matches_by_overlap(matches)
+
+class HybridRadioRecognizer(BaseRecognizer):
+    def __init__(self, dejavu):
+        super(HybridRadioRecognizer, self).__init__(dejavu)
+
+    def recognize_file(self, filename, limit=float('inf'), offset=0):
+        matches = []
+
+        self.seek_time = 0
+        
+        hashes_callback=lambda hashes:self._recognize(matches, *hashes)
+        
+        p = time.time()
+        self.dejavu.fingerprint_large_file(filename, hashes_callback=hashes_callback)
+        p = time.time() - p
+
+        t = time.time()
+        match_data = self.dejavu.align_matches_by_overlap(matches)
+        t = time.time() - t
+
+        if match_data:
+            matches = self.dejavu.process_results(match_data, skip=0)
+
+            return matches, {'process_time': p, 'recognize_time': t, 'seek_time': self.seek_time}
+
+    def recognize(self, filename, limit=float('inf'), offset=0):
+        return self.recognize_file(filename, limit, offset)
+
+    def _recognize(self, matches=[], *data):
+        print("Seeking Hashes")
+        r = time.time()
+        matches.extend(self.dejavu.find_matches_from_hashes(data, preserve_offsets=True))
+        r = time.time() - r
+        print("Matching hashes added.")
+        self.seek_time += r
+        # return self.dejavu.align_matches_by_overlap(matches)
+        # The callback does not do anything with a return value so rendering one seems waistful.
+
+class SelfRecognizer(BaseRecognizer):
+    def __init__(self, dejavu):
+        super(SelfRecognizer, self).__init__(dejavu)
+
+    def recognize_file(self, song_id):
+        t = time.time()
+        match_data = self._recognize(song_id)
+        t = time.time() - t
+
+        if match_data:
+            matches = self.dejavu.process_results(match_data, skip=0)
+
+            return matches, {'load_time': '-', 'recognize_time': t}
+
+    def recognize(self, song_id):
+        return self.recognize_file(song_id)
+
+    def _recognize(self, song_id):
+        matches = []
+        matches.extend(self.dejavu.find_self_matches(song_id, preserve_offsets=True))
+        return self.dejavu.align_matches_by_overlap(matches)
 
 class MicrophoneRecognizer(BaseRecognizer):
     default_chunksize   = 8192
