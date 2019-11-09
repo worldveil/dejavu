@@ -131,7 +131,7 @@ $ python dejavu.py --recognize file sometrack.wav
 or in scripting, assuming you've already instantiated a Dejavu object: 
 
 ```python
->>> from dejavu.recognize import FileRecognizer
+>>> from dejavu.logic.recognizer.file_recognizer import FileRecognizer
 >>> song = djv.recognize(FileRecognizer, "va_us_top_40/wav/Mirrors - Justin Timberlake.wav")
 ```
 
@@ -140,7 +140,7 @@ or in scripting, assuming you've already instantiated a Dejavu object:
 With scripting:
 
 ```python
->>> from dejavu.recognize import MicrophoneRecognizer
+>>> from dejavu.logic.recognizer.microphone_recognizer import MicrophoneRecognizer
 >>> song = djv.recognize(MicrophoneRecognizer, seconds=10) # Defaults to 10 seconds.
 ```
 
