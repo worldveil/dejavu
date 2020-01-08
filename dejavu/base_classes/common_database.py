@@ -59,7 +59,7 @@ class CommonDatabase(BaseDatabase, metaclass=abc.ABCMeta):
 
         :return: the amount of songs in the database.
         """
-        with self.cursor() as cur:
+        with self.cursor(buffered=True) as cur:
             cur.execute(self.SELECT_UNIQUE_SONG_IDS)
             count = cur.fetchone()[0] if cur.rowcount != 0 else 0
 
@@ -71,7 +71,7 @@ class CommonDatabase(BaseDatabase, metaclass=abc.ABCMeta):
 
         :return: the number of fingerprints in the database.
         """
-        with self.cursor() as cur:
+        with self.cursor(buffered=True) as cur:
             cur.execute(self.SELECT_NUM_FINGERPRINTS)
             count = cur.fetchone()[0] if cur.rowcount != 0 else 0
 
