@@ -7,11 +7,11 @@ def parse_requirements(requirements):
     with open(requirements) as f:
         lines = [l for l in f]
         # remove spaces
-        stripped = map((lambda x: x.strip()), lines)
+        stripped = list(map((lambda x: x.strip()), lines))
         # remove comments
-        nocomments = filter((lambda x: not x.startswith('#')), stripped)
+        nocomments = list(filter((lambda x: not x.startswith('#')), stripped))
         # remove empty lines
-        reqs = filter((lambda x: x), nocomments)
+        reqs = list(filter((lambda x: x), nocomments))
         return reqs
 
 PACKAGE_NAME = "PyDejavu"
