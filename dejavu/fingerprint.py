@@ -57,7 +57,7 @@ PEAK_SORT = True
 
 ######################################################################
 # Number of bits to grab from the front of the SHA1 hash in the
-# fingerprint calculation. The more you grab, the more memory storage, 
+# fingerprint calculation. The more you grab, the more memory storage,
 # with potentially lesser collisions of matches.
 FINGERPRINT_REDUCTION = 20
 
@@ -126,7 +126,7 @@ def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
     for x in peaks_filtered:
         frequency_idx.append(x[1])
         time_idx.append(x[0])
-    
+
     if plot:
         # scatter of the peaks
         fig, ax = plt.subplots()
@@ -165,8 +165,7 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE,
                 t1 = peaks[i][IDX_TIME_J]
                 t2 = peaks[i + j][IDX_TIME_J]
                 t_delta = t2 - t1
-
                 if t_delta >= min_hash_time_delta and t_delta <= max_hash_time_delta:
                     h = hashlib.sha1(
-                        "%s|%s|%s" % (str(freq1), str(freq2), str(t_delta)))
+                        "{}|{}|{}".format(str(freq1), str(freq2), str(t_delta)).encode('utf-8'))
                     yield (h.hexdigest()[0:fingerprint_reduction], t1)

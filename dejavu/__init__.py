@@ -1,6 +1,7 @@
 import pymysql
 pymysql.install_as_MySQLdb()
 
+
 from dejavu.database import get_database, Database
 import dejavu.decoder as decoder
 from . import fingerprint
@@ -8,7 +9,11 @@ import multiprocessing
 import os
 import traceback
 import sys
-
+import numpy as np
+pymysql.converters.encoders[np.float64] = pymysql.converters.escape_float
+pymysql.converters.encoders[np.int64] = pymysql.converters.escape_int
+pymysql.converters.conversions = pymysql.converters.encoders.copy()
+pymysql.converters.conversions.update(pymysql.converters.decoders)
 
 class Dejavu(object):
 
