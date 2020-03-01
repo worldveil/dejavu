@@ -57,7 +57,7 @@ PEAK_SORT = True
 
 ######################################################################
 # Number of bits to grab from the front of the SHA1 hash in the
-# fingerprint calculation. The more you grab, the more memory storage, 
+# fingerprint calculation. The more you grab, the more memory storage,
 # with potentially lesser collisions of matches.
 FINGERPRINT_REDUCTION = 20
 
@@ -65,7 +65,11 @@ def fingerprint(channel_samples, Fs=DEFAULT_FS,
                 wsize=DEFAULT_WINDOW_SIZE,
                 wratio=DEFAULT_OVERLAP_RATIO,
                 fan_value=DEFAULT_FAN_VALUE,
-                amp_min=DEFAULT_AMP_MIN):
+                amp_min=DEFAULT_AMP_MIN,
+                peak_sort=PEAK_SORT,
+                fingerprint_reduction=FINGERPRINT_REDUCTION,
+                min_hash_time_delta=MIN_HASH_TIME_DELTA,
+                max_hash_time_delta=MAX_HASH_TIME_DELTA):
     """
     FFT the channel, log transform output, find local maxima, then return
     locally sensitive hashes.
@@ -86,7 +90,12 @@ def fingerprint(channel_samples, Fs=DEFAULT_FS,
     local_maxima = get_2D_peaks(arr2D, plot=False, amp_min=amp_min)
 
     # return hashes
-    return generate_hashes(local_maxima, fan_value=fan_value)
+    return generate_hashes(local_maxima,
+                           fan_value=fan_value,
+                           peak_sort=peak_sort,
+                           fingerprint_reduction=fingerprint_reduction,
+                           min_hash_time_delta=min_hash_time_delta,
+                           max_hash_time_delta=max_hash_time_delta)
 
 
 def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
@@ -109,15 +118,15 @@ def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
 
     # filter peaks
     amps = amps.flatten()
-    peaks = zip(i, j, amps)
-    peaks_filtered = filter(lambda x: x[2]>amp_min, peaks) # freq, time, amp
+    peaks = list(zip(i, j, amps))
+    peaks_filtered = [x for x in peaks if x[2]>amp_min] # freq, time, amp
     # get indices for frequency and time
     frequency_idx = []
     time_idx = []
     for x in peaks_filtered:
         frequency_idx.append(x[1])
         time_idx.append(x[0])
-    
+
     if plot:
         # scatter of the peaks
         fig, ax = plt.subplots()
@@ -129,16 +138,22 @@ def get_2D_peaks(arr2D, plot=False, amp_min=DEFAULT_AMP_MIN):
         plt.gca().invert_yaxis()
         plt.show()
 
-    return zip(frequency_idx, time_idx)
+    return list(zip(frequency_idx, time_idx))
 
 
-def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
+def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE,
+                    peak_sort=PEAK_SORT,
+                    fingerprint_reduction=FINGERPRINT_REDUCTION,
+                    min_hash_time_delta=MIN_HASH_TIME_DELTA,
+                    max_hash_time_delta=MAX_HASH_TIME_DELTA):
     """
     Hash list structure:
        sha1_hash[0:20]    time_offset
     [(e05b341a9b77a51fd26, 32), ... ]
     """
-    if PEAK_SORT:
+    if fingerprint_reduction <= 0:
+        fingerprint_reduction = FINGERPRINT_REDUCTION
+    if peak_sort:
         peaks.sort(key=itemgetter(1))
 
     for i in range(len(peaks)):
@@ -150,8 +165,7 @@ def generate_hashes(peaks, fan_value=DEFAULT_FAN_VALUE):
                 t1 = peaks[i][IDX_TIME_J]
                 t2 = peaks[i + j][IDX_TIME_J]
                 t_delta = t2 - t1
-
-                if t_delta >= MIN_HASH_TIME_DELTA and t_delta <= MAX_HASH_TIME_DELTA:
+                if t_delta >= min_hash_time_delta and t_delta <= max_hash_time_delta:
                     h = hashlib.sha1(
-                        "%s|%s|%s" % (str(freq1), str(freq2), str(t_delta)))
-                    yield (h.hexdigest()[0:FINGERPRINT_REDUCTION], t1)
+                        "{}|{}|{}".format(str(freq1), str(freq2), str(t_delta)).encode('utf-8'))
+                    yield (h.hexdigest()[0:fingerprint_reduction], t1)

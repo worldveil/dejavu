@@ -1,11 +1,19 @@
+import pymysql
+pymysql.install_as_MySQLdb()
+
+
 from dejavu.database import get_database, Database
 import dejavu.decoder as decoder
-import fingerprint
+from . import fingerprint
 import multiprocessing
 import os
 import traceback
 import sys
-
+import numpy as np
+pymysql.converters.encoders[np.float64] = pymysql.converters.escape_float
+pymysql.converters.encoders[np.int64] = pymysql.converters.escape_int
+pymysql.converters.conversions = pymysql.converters.encoders.copy()
+pymysql.converters.conversions.update(pymysql.converters.decoders)
 
 class Dejavu(object):
 
@@ -32,6 +40,7 @@ class Dejavu(object):
         self.limit = self.config.get("fingerprint_limit", None)
         if self.limit == -1:  # for JSON compatibility
             self.limit = None
+        self.fingerprint_config = self.config.get("fingerprint_config", {})
         self.get_fingerprinted_songs()
 
     def get_fingerprinted_songs(self):
@@ -58,14 +67,16 @@ class Dejavu(object):
 
             # don't refingerprint already fingerprinted files
             if decoder.unique_hash(filename) in self.songhashes_set:
-                print "%s already fingerprinted, continuing..." % filename
+                print("%s already fingerprinted, continuing..." % filename)
                 continue
 
             filenames_to_fingerprint.append(filename)
 
         # Prepare _fingerprint_worker input
-        worker_input = zip(filenames_to_fingerprint,
-                           [self.limit] * len(filenames_to_fingerprint))
+        worker_input = list(zip(filenames_to_fingerprint,
+                           [self.limit] * len(filenames_to_fingerprint),
+                           [self.fingerprint_config] *
+                           len(filenames_to_fingerprint)))
 
         # Send off our tasks
         iterator = pool.imap_unordered(_fingerprint_worker,
@@ -74,7 +85,7 @@ class Dejavu(object):
         # Loop till we have all of them
         while True:
             try:
-                song_name, hashes, file_hash = iterator.next()
+                song_name, hashes, file_hash = next(iterator)
             except multiprocessing.TimeoutError:
                 continue
             except StopIteration:
@@ -99,7 +110,7 @@ class Dejavu(object):
         song_name = song_name or songname
         # don't refingerprint already fingerprinted files
         if song_hash in self.songhashes_set:
-            print "%s already fingerprinted, continuing..." % song_name
+            print("%s already fingerprinted, continuing..." % song_name)
         else:
             song_name, hashes, file_hash = _fingerprint_worker(
                 filepath,
@@ -150,9 +161,7 @@ class Dejavu(object):
             return None
 
         # return match info
-        nseconds = round(float(largest) / fingerprint.DEFAULT_FS *
-                         fingerprint.DEFAULT_WINDOW_SIZE *
-                         fingerprint.DEFAULT_OVERLAP_RATIO, 5)
+        nseconds = self._get_nseconds(largest)
         song = {
             Dejavu.SONG_ID : song_id,
             Dejavu.SONG_NAME : songname.encode("utf8"),
@@ -166,12 +175,22 @@ class Dejavu(object):
         r = recognizer(self)
         return r.recognize(*options, **kwoptions)
 
+    def _get_nseconds(self, largest):
+        fs = self.fingerprint_config.get('DEFAULT_FS', fingerprint.DEFAULT_FS)
+        window_size = self.fingerprint_config.\
+            get('DEFAULT_WINDOW_SIZE', fingerprint.DEFAULT_WINDOW_SIZE)
+        overlap_ratio = self.fingerprint_config.\
+            get('DEFAULT_OVERLAP_RATIO', fingerprint.DEFAULT_OVERLAP_RATIO)
 
-def _fingerprint_worker(filename, limit=None, song_name=None):
+        return round(float(largest) / fs * window_size * overlap_ratio, 5)
+
+
+def _fingerprint_worker(filename, limit=None, song_name=None,
+                        fingerprint_config=None):
     # Pool.imap sends arguments as tuples so we have to unpack
     # them ourself.
     try:
-        filename, limit = filename
+        filename, limit, fingerprint_config = filename
     except ValueError:
         pass
 
@@ -183,15 +202,41 @@ def _fingerprint_worker(filename, limit=None, song_name=None):
 
     for channeln, channel in enumerate(channels):
         # TODO: Remove prints or change them into optional logging.
-        print("Fingerprinting channel %d/%d for %s" % (channeln + 1,
+        print(("Fingerprinting channel %d/%d for %s" % (channeln + 1,
                                                        channel_amount,
-                                                       filename))
-        hashes = fingerprint.fingerprint(channel, Fs=Fs)
-        print("Finished channel %d/%d for %s" % (channeln + 1, channel_amount,
-                                                 filename))
+                                                       filename)))
+        if not fingerprint_config:
+            hashes = fingerprint.fingerprint(channel, Fs=Fs)
+        else:
+            args = _expand_fingerprint_config(fingerprint_config)
+            hashes = fingerprint.fingerprint(channel, **args)
+
+        print(("Finished channel %d/%d for %s" % (channeln + 1, channel_amount,
+                                                 filename)))
         result |= set(hashes)
 
     return song_name, result, file_hash
+
+
+def _expand_fingerprint_config(conf):
+    params = {}
+    if conf.get('DEFAULT_FS', None):
+        params['Fs'] = conf.get('DEFAULT_FS')
+    if conf.get('DEFAULT_WINDOW_SIZE', None):
+        params['wsize'] = conf.get('DEFAULT_WINDOW_SIZE')
+    if conf.get('DEFAULT_FAN_VALUE', None):
+        params['fan_value'] = conf.get('DEFAULT_FAN_VALUE')
+    if conf.get('DEFAULT_AMP_MIN', None):
+        params['amp_min'] = conf.get('amp_min')
+    if conf.get('PEAK_SORT', None):
+        params['peak_sort'] = conf.get('peak_sort')
+    if conf.get('FINGERPRINT_REDUCTION', None):
+        params['fingerprint_reduction'] = conf.get('FINGERPRINT_REDUCTION')
+    if conf.get('MIN_HASH_TIME_DELTA', None):
+        params['min_hash_time_delta'] = conf.get('MIN_HASH_TIME_DELTA')
+    if conf.get('MAX_HASH_TIME_DELTA', None):
+        params['max_hash_time_delta'] = conf.get('MAX_HASH_TIME_DELTA')
+    return params
 
 
 def chunkify(lst, n):
@@ -199,4 +244,4 @@ def chunkify(lst, n):
     Splits a list into roughly n equal parts.
     http://stackoverflow.com/questions/2130016/splitting-a-list-of-arbitrary-size-into-only-roughly-n-equal-parts
     """
-    return [lst[i::n] for i in xrange(n)]
+    return [lst[i::n] for i in range(n)]
