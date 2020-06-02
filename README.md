@@ -24,6 +24,8 @@ Second, you'll need to create a MySQL database where Dejavu can store fingerprin
 
 Now you're ready to start fingerprinting your audio collection! 
 
+Obs: The same from above goes for postgres database if you want to use it.
+
 ## Quickstart
 
 ```bash
@@ -44,8 +46,8 @@ Start by creating a Dejavu object with your configurations settings (Dejavu take
 ...     "database": {
 ...         "host": "127.0.0.1",
 ...         "user": "root",
-...         "passwd": <password above>, 
-...         "db": <name of the database you created above>,
+...         "password": <password above>, 
+...         "database": <name of the database you created above>,
 ...     }
 ... }
 >>> djv = Dejavu(config)
@@ -81,7 +83,7 @@ The following keys are mandatory:
 The following keys are optional:
 
 * `fingerprint_limit`: allows you to control how many seconds of each audio file to fingerprint. Leaving out this key, or alternatively using `-1` and `None` will cause Dejavu to fingerprint the entire audio file. Default value is `None`.
-* `database_type`: as of now, only `mysql` (the default value) is supported. If you'd like to subclass `Database` and add another, please fork and send a pull request!
+* `database_type`: `mysql` (the default value) and `postgres` are supported. If you'd like to add another subclass for `BaseDatabase` and implement a new type of database, please fork and send a pull request!
 
 An example configuration is as follows:
 
@@ -91,8 +93,8 @@ An example configuration is as follows:
 ...     "database": {
 ...         "host": "127.0.0.1",
 ...         "user": "root",
-...         "passwd": "Password123", 
-...         "db": "dejavu_db",
+...         "password": "Password123", 
+...         "database": "dejavu_db",
 ...     },
 ...     "database_type" : "mysql",
 ...     "fingerprint_limit" : 10
@@ -102,16 +104,16 @@ An example configuration is as follows:
 
 ## Tuning
 
-Inside `fingerprint.py`, you may want to adjust following parameters (some values are given below).
+Inside `config/settings.py`, you may want to adjust following parameters (some values are given below).
 
     FINGERPRINT_REDUCTION = 30
     PEAK_SORT = False
     DEFAULT_OVERLAP_RATIO = 0.4
-    DEFAULT_FAN_VALUE = 10
-    DEFAULT_AMP_MIN = 15
-    PEAK_NEIGHBORHOOD_SIZE = 30
+    DEFAULT_FAN_VALUE = 5
+    DEFAULT_AMP_MIN = 10
+    PEAK_NEIGHBORHOOD_SIZE = 10
     
-These parameters are described in the `fingerprint.py` in detail. Read that in-order to understand the impact of changing these values.
+These parameters are described within the file in detail. Read that in-order to understand the impact of changing these values.
 
 ## Recognizing
 
@@ -123,13 +125,13 @@ Through the terminal:
 
 ```bash
 $ python dejavu.py --recognize file sometrack.wav 
-{'song_id': 1, 'song_name': 'Taylor Swift - Shake It Off', 'confidence': 3948, 'offset_seconds': 30.00018, 'match_time': 0.7159781455993652, 'offset': 646L}
+{'total_time': 2.863781690597534, 'fingerprint_time': 2.4306554794311523, 'query_time': 0.4067542552947998, 'align_time': 0.007731199264526367, 'results': [{'song_id': 1, 'song_name': 'Taylor Swift - Shake It Off', 'input_total_hashes': 76168, 'fingerprinted_hashes_in_db': 4919, 'hashes_matched_in_input': 794, 'input_confidence': 0.01, 'fingerprinted_confidence': 0.16, 'offset': -924, 'offset_seconds': -30.00018, 'file_sha1': b'3DC269DF7B8DB9B30D2604DA80783155912593E8'}, {...}, ...]}
 ```
 
 or in scripting, assuming you've already instantiated a Dejavu object: 
 
 ```python
->>> from dejavu.recognize import FileRecognizer
+>>> from dejavu.logic.recognizer.file_recognizer import FileRecognizer
 >>> song = djv.recognize(FileRecognizer, "va_us_top_40/wav/Mirrors - Justin Timberlake.wav")
 ```
 
@@ -138,7 +140,7 @@ or in scripting, assuming you've already instantiated a Dejavu object:
 With scripting:
 
 ```python
->>> from dejavu.recognize import MicrophoneRecognizer
+>>> from dejavu.logic.recognizer.microphone_recognizer import MicrophoneRecognizer
 >>> song = djv.recognize(MicrophoneRecognizer, seconds=10) # Defaults to 10 seconds.
 ```
 
