@@ -38,6 +38,16 @@ You can also install the latest code from GitHub:
     source env_with_system/bin/activate
     pip install https://github.com/worldveil/dejavu/zipball/master
 
+## Ubuntu 
+
+Install dependencies:
+
+    sudo apt-get install python-dev libmysqlclient-dev python-numpy python-matplotlib ffmpeg portaudio19-dev
+    pip install MySQL-python
+    pip install pyAudio
+    pip install pydub
+    pip install pyDejavu
+
 ## Max OS X
 
 ### Dependency installation for Mac OS X
