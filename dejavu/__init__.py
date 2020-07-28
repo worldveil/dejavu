@@ -194,13 +194,13 @@ class Dejavu:
         )
 
         songs_result = []
-        for song_id, offset, _ in songs_matches[0:topn]:  # consider topn elements in the result
+        for song_id, offset, matching_count in songs_matches[0:topn]:  # consider topn elements in the result
             song = self.db.get_song_by_id(song_id)
 
             song_name = song.get(SONG_NAME, None)
             song_hashes = song.get(FIELD_TOTAL_HASHES, None)
             nseconds = round(float(offset) / DEFAULT_FS * DEFAULT_WINDOW_SIZE * DEFAULT_OVERLAP_RATIO, 5)
-            hashes_matched = dedup_hashes[song_id]
+            hashes_matched = matching_count
 
             song = {
                 SONG_ID: song_id,
