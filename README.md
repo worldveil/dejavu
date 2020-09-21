@@ -118,7 +118,7 @@ The following keys are mandatory:
 The following keys are optional:
 
 * `fingerprint_limit`: allows you to control how many seconds of each audio file to fingerprint. Leaving out this key, or alternatively using `-1` and `None` will cause Dejavu to fingerprint the entire audio file. Default value is `None`.
-* `database_type`: `mysql` (the default value) and `postgres` are supported. If you'd like to add another subclass for `BaseDatabase` and implement a new type of database, please fork and send a pull request!
+* `database_type`: `mysql` (the default value), `postgres` and `mongodb` are supported. If you'd like to add another subclass for `BaseDatabase` and implement a new type of database, please fork and send a pull request!
 
 An example configuration is as follows:
 
@@ -132,6 +132,21 @@ An example configuration is as follows:
 ...         "database": "dejavu_db",
 ...     },
 ...     "database_type" : "mysql",
+...     "fingerprint_limit" : 10
+... }
+>>> djv = Dejavu(config)
+```
+
+An example for MongoDB:
+
+```python
+>>> from dejavu import Dejavu
+>>> config = {
+...     "database": {
+...         "uri": "mongodb://localhost:27017/",
+...         "database" : "dejavu",
+...     },
+...     "database_type" : "mongodb",
 ...     "fingerprint_limit" : 10
 ... }
 >>> djv = Dejavu(config)
