@@ -16,10 +16,10 @@ python dejavu.py -f ./mp3/ mp3
 # away from start or end, sampling with random seed = 42, and finally 
 # store results in ./results and log to dejavu-test.log
 python run_tests.py \
-	--secs 5 \
-	--temp ./temp_audio \
-	--log-file ./results/dejavu-test.log \
-	--padding 8 \
-	--seed 42 \
-	--results ./results \
+	-sec 5 \
+	-temp ./temp_audio \
+	-lf ./results/dejavu-test.log \
+	-pad 8 \
+	-sd 42 \
+	-res ./results \
 	./mp3
