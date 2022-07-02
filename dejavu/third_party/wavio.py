@@ -142,7 +142,7 @@ def read(file):
                 sampwidth is 3.
     Notes
     -----
-    This function uses the `wave` module of the Python standard libary
+    This function uses the `wave` module of the Python standard library
     to read the WAV file, so it has the same limitations as that library.
     In particular, the function does not read compressed WAV files, and
     it does not read files with floating point data.
