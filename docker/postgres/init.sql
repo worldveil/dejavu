@@ -1,2 +1,0 @@
--- put any SQL you'd like to run on creation of the image
--- in this file :)
