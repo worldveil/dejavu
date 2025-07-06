@@ -141,7 +141,7 @@ class CommonDatabase(BaseDatabase, metaclass=abc.ABCMeta):
         """
         with self.cursor() as cur:
             if fingerprint:
-                cur.execute(self.SELECT, (fingerprint,))
+                cur.execute("SELECT hash, song_id, `offset` FROM fingerprints WHERE hash IN (UNHEX(%s), UNHEX(%s), UNHEX(%s))" , (fingerprint,))
             else:  # select all if no key
                 cur.execute(self.SELECT_ALL)
             return list(cur)
