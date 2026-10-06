@@ -2,9 +2,10 @@ import multiprocessing
 import os
 import sys
 import traceback
-from itertools import groupby
 from time import time
 from typing import Dict, List, Tuple
+
+import numpy as np
 
 import dejavu.logic.decoder as decoder
 from dejavu.base_classes.base_database import get_database
@@ -186,12 +187,38 @@ class Dejavu:
         :return: a list of dictionaries (based on topn) with match information.
         """
         # count offset occurrences per song and keep only the maximum ones.
-        sorted_matches = sorted(matches, key=lambda m: (m[0], m[1]))
-        counts = [(*key, len(list(group))) for key, group in groupby(sorted_matches, key=lambda m: (m[0], m[1]))]
-        songs_matches = sorted(
-            [max(list(group), key=lambda g: g[2]) for key, group in groupby(counts, key=lambda count: count[0])],
-            key=lambda count: count[2], reverse=True
-        )
+        #
+        # Done with numpy: a query against a large catalogue returns tens of millions of matches, and
+        # sorting and grouping those tuples in Python dominated recognition time. Ties are broken as the
+        # groupby version did: (song_id, offset) groups come out in ascending order and argmax returns the
+        # first maximum, so a song whose best count is shared by several offsets keeps the smallest one;
+        # the final sort is stable, so songs tied on count stay in ascending song_id order.
+        songs_matches = []
+        if matches:
+            arr = np.asarray(matches, dtype=np.int64)
+            sids, offsets = arr[:, 0], arr[:, 1]
+
+            order = np.lexsort((offsets, sids))
+            s_sorted, o_sorted = sids[order], offsets[order]
+
+            # start of each (song_id, offset) run
+            is_new = np.empty(len(s_sorted), dtype=bool)
+            is_new[0] = True
+            np.not_equal(s_sorted[1:], s_sorted[:-1], out=is_new[1:])
+            np.logical_or(is_new[1:], o_sorted[1:] != o_sorted[:-1], out=is_new[1:])
+
+            starts = np.flatnonzero(is_new)
+            group_counts = np.diff(np.append(starts, len(s_sorted)))
+            group_sids, group_offsets = s_sorted[starts], o_sorted[starts]
+
+            # start of each song's block of groups
+            song_starts = np.flatnonzero(np.append(True, group_sids[1:] != group_sids[:-1]))
+            song_ends = np.append(song_starts[1:], len(group_sids))
+
+            for lo, hi in zip(song_starts, song_ends):
+                best = lo + int(np.argmax(group_counts[lo:hi]))
+                songs_matches.append((int(group_sids[best]), int(group_offsets[best]), int(group_counts[best])))
+            songs_matches.sort(key=lambda count: count[2], reverse=True)
 
         songs_result = []
         for song_id, offset, _ in songs_matches[0:topn]:  # consider topn elements in the result
