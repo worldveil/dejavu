@@ -118,7 +118,7 @@ The following keys are mandatory:
 The following keys are optional:
 
 * `fingerprint_limit`: allows you to control how many seconds of each audio file to fingerprint. Leaving out this key, or alternatively using `-1` and `None` will cause Dejavu to fingerprint the entire audio file. Default value is `None`.
-* `database_type`: `mysql` (the default value) and `postgres` are supported. If you'd like to add another subclass for `BaseDatabase` and implement a new type of database, please fork and send a pull request!
+* `database_type`: `mysql` (the default value), `postgres` and `postgres_compact` are supported. `postgres_compact` stores fingerprints in a much smaller form and searches them faster, see [Compact fingerprint store](#compact-fingerprint-store). If you'd like to add another subclass for `BaseDatabase` and implement a new type of database, please fork and send a pull request!
 
 An example configuration is as follows:
 
@@ -149,6 +149,30 @@ Inside `config/settings.py`, you may want to adjust following parameters (some v
     PEAK_NEIGHBORHOOD_SIZE = 10
     
 These parameters are described within the file in detail. Read that in-order to understand the impact of changing these values.
+
+## Compact fingerprint store
+
+With `"database_type": "postgres_compact"` (PostgreSQL 11 or later), fingerprints are not stored one row each in the `fingerprints` table. That costs about 70 bytes per fingerprint once PostgreSQL's row overhead and the two indexes are counted, and a recognition fetches every row of every hash in the query, so both disk and query time grow with the catalogue.
+
+Instead:
+
+* each fingerprint's peak pair is packed losslessly into a 32-bit integer, `(freq1 << 20) | (freq2 << 8) | time_delta`, instead of a truncated SHA-1;
+* fingerprints are packed into compressed blobs: one row per song and 5 second block (`song_fp`), and one row per hash holding up to 1,000 of its postings (`fp_postings`). That comes to 2 to 3 bytes per fingerprint in each;
+* a recognition fetches the query's rarest hashes first, stops as soon as one song clearly leads, and then verifies the best candidates against all of their fingerprints in the query's time range.
+
+Measured on a catalogue of 5,170 songs (710 million fingerprints), against the same fingerprints in the `fingerprints` table:
+
+| | `postgres` | `postgres_compact` |
+|---|---:|---:|
+| database size | 109 GB (46 GB rows, 63 GB indexes) | 6.9 GB |
+| bytes per fingerprint | 69.7 | ~2.4 in `song_fp`, ~3.1 in `fp_postings` |
+| search time, median | 23.9 s | 28 ms |
+| top-1 accuracy, 1,400 clips (200 songs, clean and with 3 levels of 2 kinds of noise) | 80.6% | 81.0% |
+| same top-1 song as `postgres`, on the 1,140 clips and recordings where both returned one | | 100% |
+
+Results have the same keys as with the other database types. `hashes_matched_in_input` is the number of query fingerprints that line up in time with the song, where the other types count every database row the song returned.
+
+The fingerprint format differs, so audio fingerprinted with `mysql` or `postgres` has to be fingerprinted again into a `postgres_compact` database. Offsets are stored in 16 bits, which limits songs to about 50 minutes. The `FPSTORE_*` settings in `config/settings.py` tune the block and posting list sizes (fixed when the tables are created) and the search.
 
 ## Recognizing
 

@@ -2,9 +2,10 @@ import multiprocessing
 import os
 import sys
 import traceback
-from itertools import groupby
 from time import time
 from typing import Dict, List, Tuple
+
+import numpy as np
 
 import dejavu.logic.decoder as decoder
 from dejavu.base_classes.base_database import get_database
@@ -15,7 +16,8 @@ from dejavu.config.settings import (DEFAULT_FS, DEFAULT_OVERLAP_RATIO,
                                     FINGERPRINTED_HASHES, HASHES_MATCHED,
                                     INPUT_CONFIDENCE, INPUT_HASHES, OFFSET,
                                     OFFSET_SECS, SONG_ID, SONG_NAME, TOPN)
-from dejavu.logic.fingerprint import fingerprint
+from dejavu.logic.fingerprint import (fingerprint, fingerprint_hash32,
+                                      unique_pairs)
 
 
 class Dejavu:
@@ -94,7 +96,8 @@ class Dejavu:
         worker_input = list(zip(filenames_to_fingerprint, [self.limit] * len(filenames_to_fingerprint)))
 
         # Send off our tasks
-        iterator = pool.imap_unordered(Dejavu._fingerprint_worker, worker_input)
+        worker = Dejavu._fingerprint_worker_hash32 if self.db.compact else Dejavu._fingerprint_worker
+        iterator = pool.imap_unordered(worker, worker_input)
 
         # Loop till we have all of them
         while True:
@@ -133,12 +136,9 @@ class Dejavu:
         if song_hash in self.songhashes_set:
             print(f"{song_name} already fingerprinted, continuing...")
         else:
-            song_name, hashes, file_hash = Dejavu._fingerprint_worker(
-                file_path,
-                self.limit,
-                song_name=song_name
-            )
-            sid = self.db.insert_song(song_name, file_hash)
+            worker = Dejavu._fingerprint_worker_hash32 if self.db.compact else Dejavu._fingerprint_worker
+            _, hashes, file_hash = worker((file_path, self.limit))
+            sid = self.db.insert_song(song_name, file_hash, len(hashes))
 
             self.db.insert_hashes(sid, hashes)
             self.db.set_song_fingerprinted(sid)
@@ -186,12 +186,38 @@ class Dejavu:
         :return: a list of dictionaries (based on topn) with match information.
         """
         # count offset occurrences per song and keep only the maximum ones.
-        sorted_matches = sorted(matches, key=lambda m: (m[0], m[1]))
-        counts = [(*key, len(list(group))) for key, group in groupby(sorted_matches, key=lambda m: (m[0], m[1]))]
-        songs_matches = sorted(
-            [max(list(group), key=lambda g: g[2]) for key, group in groupby(counts, key=lambda count: count[0])],
-            key=lambda count: count[2], reverse=True
-        )
+        #
+        # Done with numpy: a query against a large catalogue returns tens of millions of matches, and
+        # sorting and grouping those tuples in Python dominated recognition time. Ties are broken as the
+        # groupby version did: (song_id, offset) groups come out in ascending order and argmax returns the
+        # first maximum, so a song whose best count is shared by several offsets keeps the smallest one;
+        # the final sort is stable, so songs tied on count stay in ascending song_id order.
+        songs_matches = []
+        if matches:
+            arr = np.asarray(matches, dtype=np.int64)
+            sids, offsets = arr[:, 0], arr[:, 1]
+
+            order = np.lexsort((offsets, sids))
+            s_sorted, o_sorted = sids[order], offsets[order]
+
+            # start of each (song_id, offset) run
+            is_new = np.empty(len(s_sorted), dtype=bool)
+            is_new[0] = True
+            np.not_equal(s_sorted[1:], s_sorted[:-1], out=is_new[1:])
+            np.logical_or(is_new[1:], o_sorted[1:] != o_sorted[:-1], out=is_new[1:])
+
+            starts = np.flatnonzero(is_new)
+            group_counts = np.diff(np.append(starts, len(s_sorted)))
+            group_sids, group_offsets = s_sorted[starts], o_sorted[starts]
+
+            # start of each song's block of groups
+            song_starts = np.flatnonzero(np.append(True, group_sids[1:] != group_sids[:-1]))
+            song_ends = np.append(song_starts[1:], len(group_sids))
+
+            for lo, hi in zip(song_starts, song_ends):
+                best = lo + int(np.argmax(group_counts[lo:hi]))
+                songs_matches.append((int(group_sids[best]), int(group_offsets[best]), int(group_counts[best])))
+            songs_matches.sort(key=lambda count: count[2], reverse=True)
 
         songs_result = []
         for song_id, offset, _ in songs_matches[0:topn]:  # consider topn elements in the result
@@ -256,4 +282,40 @@ class Dejavu:
 
             fingerprints |= set(hashes)
 
+        return fingerprints, file_hash
+
+    @staticmethod
+    def _fingerprint_worker_hash32(arguments):
+        # _fingerprint_worker for databases with the compact store.
+        file_name, limit = arguments
+
+        song_name, extension = os.path.splitext(os.path.basename(file_name))
+
+        fingerprints, file_hash = Dejavu.get_file_fingerprints_hash32(file_name, limit, print_output=True)
+
+        return song_name, fingerprints, file_hash
+
+    @staticmethod
+    def get_file_fingerprints_hash32(file_name: str, limit: int, print_output: bool = False):
+        """
+        get_file_fingerprints with the fingerprints as hash32 values (fingerprint_hash32).
+
+        :return: an (n, 2) array of the distinct (hash32, offset) pairs of all channels, and the file hash.
+        """
+        channels, fs, file_hash = decoder.read(file_name, limit)
+        hashes, offsets = [np.empty(0, np.uint32)], [np.empty(0, np.int64)]
+        channel_amount = len(channels)
+        for channeln, channel in enumerate(channels, start=1):
+            if print_output:
+                print(f"Fingerprinting channel {channeln}/{channel_amount} for {file_name}")
+
+            channel_hashes, channel_offsets = fingerprint_hash32(channel, Fs=fs)
+
+            if print_output:
+                print(f"Finished channel {channeln}/{channel_amount} for {file_name}")
+
+            hashes.append(channel_hashes)
+            offsets.append(channel_offsets)
+
+        fingerprints = np.column_stack(unique_pairs(np.concatenate(hashes), np.concatenate(offsets)))
         return fingerprints, file_hash

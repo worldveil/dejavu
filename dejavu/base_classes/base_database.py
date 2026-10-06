@@ -10,6 +10,10 @@ class BaseDatabase(object, metaclass=abc.ABCMeta):
     # to refer to your class
     type = None
 
+    # True for databases that keep fingerprints in the compact store (dejavu.fpstore): Dejavu then
+    # fingerprints with fingerprint_hash32 and recognizes through search() instead of return_matches().
+    compact = False
+
     def __init__(self):
         super().__init__()
 
