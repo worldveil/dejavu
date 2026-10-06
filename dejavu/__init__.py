@@ -16,7 +16,8 @@ from dejavu.config.settings import (DEFAULT_FS, DEFAULT_OVERLAP_RATIO,
                                     FINGERPRINTED_HASHES, HASHES_MATCHED,
                                     INPUT_CONFIDENCE, INPUT_HASHES, OFFSET,
                                     OFFSET_SECS, SONG_ID, SONG_NAME, TOPN)
-from dejavu.logic.fingerprint import fingerprint
+from dejavu.logic.fingerprint import (fingerprint, fingerprint_hash32,
+                                      unique_pairs)
 
 
 class Dejavu:
@@ -95,7 +96,8 @@ class Dejavu:
         worker_input = list(zip(filenames_to_fingerprint, [self.limit] * len(filenames_to_fingerprint)))
 
         # Send off our tasks
-        iterator = pool.imap_unordered(Dejavu._fingerprint_worker, worker_input)
+        worker = Dejavu._fingerprint_worker_hash32 if self.db.compact else Dejavu._fingerprint_worker
+        iterator = pool.imap_unordered(worker, worker_input)
 
         # Loop till we have all of them
         while True:
@@ -134,12 +136,9 @@ class Dejavu:
         if song_hash in self.songhashes_set:
             print(f"{song_name} already fingerprinted, continuing...")
         else:
-            song_name, hashes, file_hash = Dejavu._fingerprint_worker(
-                file_path,
-                self.limit,
-                song_name=song_name
-            )
-            sid = self.db.insert_song(song_name, file_hash)
+            worker = Dejavu._fingerprint_worker_hash32 if self.db.compact else Dejavu._fingerprint_worker
+            _, hashes, file_hash = worker((file_path, self.limit))
+            sid = self.db.insert_song(song_name, file_hash, len(hashes))
 
             self.db.insert_hashes(sid, hashes)
             self.db.set_song_fingerprinted(sid)
@@ -283,4 +282,40 @@ class Dejavu:
 
             fingerprints |= set(hashes)
 
+        return fingerprints, file_hash
+
+    @staticmethod
+    def _fingerprint_worker_hash32(arguments):
+        # _fingerprint_worker for databases with the compact store.
+        file_name, limit = arguments
+
+        song_name, extension = os.path.splitext(os.path.basename(file_name))
+
+        fingerprints, file_hash = Dejavu.get_file_fingerprints_hash32(file_name, limit, print_output=True)
+
+        return song_name, fingerprints, file_hash
+
+    @staticmethod
+    def get_file_fingerprints_hash32(file_name: str, limit: int, print_output: bool = False):
+        """
+        get_file_fingerprints with the fingerprints as hash32 values (fingerprint_hash32).
+
+        :return: an (n, 2) array of the distinct (hash32, offset) pairs of all channels, and the file hash.
+        """
+        channels, fs, file_hash = decoder.read(file_name, limit)
+        hashes, offsets = [np.empty(0, np.uint32)], [np.empty(0, np.int64)]
+        channel_amount = len(channels)
+        for channeln, channel in enumerate(channels, start=1):
+            if print_output:
+                print(f"Fingerprinting channel {channeln}/{channel_amount} for {file_name}")
+
+            channel_hashes, channel_offsets = fingerprint_hash32(channel, Fs=fs)
+
+            if print_output:
+                print(f"Finished channel {channeln}/{channel_amount} for {file_name}")
+
+            hashes.append(channel_hashes)
+            offsets.append(channel_offsets)
+
+        fingerprints = np.column_stack(unique_pairs(np.concatenate(hashes), np.concatenate(offsets)))
         return fingerprints, file_hash

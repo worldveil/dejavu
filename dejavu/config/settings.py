@@ -27,7 +27,8 @@ OFFSET_SECS = 'offset_seconds'
 # DATABASE CLASS INSTANCES:
 DATABASES = {
     'mysql': ("dejavu.database_handler.mysql_database", "MySQLDatabase"),
-    'postgres': ("dejavu.database_handler.postgres_database", "PostgreSQLDatabase")
+    'postgres': ("dejavu.database_handler.postgres_database", "PostgreSQLDatabase"),
+    'postgres_compact': ("dejavu.database_handler.postgres_compact_database", "PostgreSQLCompactDatabase")
 }
 
 # TABLE SONGS
@@ -100,3 +101,31 @@ FINGERPRINT_REDUCTION = 20
 
 # Number of results being returned for file recognition
 TOPN = 2
+
+# COMPACT FINGERPRINT STORE CONFIG (database_type "postgres_compact", see dejavu/fpstore):
+# Block and part sizes are fixed when the store's tables are created; the search settings can change anytime.
+
+# A song's fingerprints are stored in time blocks of this many seconds, and recognition reads only the
+# blocks the query aligns with. 5 second blocks stay within one 8 KB database page.
+FPSTORE_BLOCK_SECONDS = 5
+
+# Longest posting list held in one row; longer lists are split into parts. 1,000 postings keep a row
+# around 3 KB, and with FPSTORE_STOP_DF at the same value every hash the search fetches is a single row.
+FPSTORE_PART_POSTINGS = 1000
+
+# Hashes with more postings than this are too common to be worth fetching. They are still used to
+# verify the candidate songs.
+FPSTORE_STOP_DF = 1000
+
+# Postings fetched, rarest hashes first, before each check whether one song clearly leads; None means
+# every remaining usable hash.
+FPSTORE_STAGES = (100_000, 500_000, 2_000_000, None)
+
+# A song clearly leads with at least FPSTORE_MIN_VOTES time-aligned votes and FPSTORE_MARGIN times
+# the votes of the runner-up.
+FPSTORE_MIN_VOTES = 10
+FPSTORE_MARGIN = 2.0
+
+# Best offset differences of each candidate song verified against all of its fingerprints in the
+# query's time range; more than one helps songs whose sections repeat.
+FPSTORE_OFFSETS_PER_SONG = 3
